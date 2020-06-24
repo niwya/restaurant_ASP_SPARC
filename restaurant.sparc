@@ -1,0 +1,35 @@
+% Defining a simple restaurant context for an agent to reason on
+
+% Constants used 
+#const wnum=2. % Total number of waiters
+#const cnum=3. % Total number of customers
+
+sorts
+% Customers and waiters are referred to as a letter and a subscripted number
+#waiter=[w][1..wnum].
+#customer=[c][1..cnum].
+#person = #customer + #waiter.
+
+% Objects in this domain can either be refillable or not 
+#refillable = {jug, basket}.
+#nonrefillable = {cutlery}.
+#object = #refillable + #nonrefillable.
+
+% Consumables to refill refillable objects with
+#consumable={tapwater, bread}.
+
+predicates
+iswaiter(#person).
+iscustomer(#person).
+
+
+rules
+% To do : find a way to declare iswaiter and iscustomer on whole customer
+% and waiter sort at once (with [w][1..wnum] might be possible)
+iswaiter(w1).
+iswaiter(w2).
+iscustomer(c1).
+iscustomer(c2).
+iscustomer(c3).
+-iscustomer(X):- not iscustomer(X), iswaiter(X).
+-iswaiter(X):- not iswaiter(X), iscustomer(X).
