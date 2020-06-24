@@ -3,6 +3,8 @@
 % Constants used 
 #const wnum=2. % Total number of waiters
 #const cnum=3. % Total number of customers
+#const tnum=3. % Total number of tables
+#const maxcapacity=2. % Maximum capacity of a table
 
 sorts
 % Customers and waiters are referred to as a letter and a subscripted number
@@ -10,18 +12,30 @@ sorts
 #customer=[c][1..cnum].
 #person = #customer + #waiter.
 
-% Objects in this domain can either be refillable or not 
-#refillable = {jug, basket}.
-#nonrefillable = {cutlery}.
+% Objects in this domain can either be refillable or not
+#jug = [jug][1..tnum]. % 1 jug per table
+#basket = [basket][1..tnum]. % 1 bread basket per table
+#refillable = #jug + #basket.
+#cutlery = [cutlery][1..cnum]. % 1 fork+knife+spoon per client
+#nonrefillable = #cutlery. % Nosense but easier to add objects later
 #object = #refillable + #nonrefillable.
 
-% Consumables to refill refillable objects with
+% Consumables to refill refillable objects with - how to define an infinte
+% stock, does this def work 
 #consumable={tapwater, bread}.
+
+% Environment
+#rooms = {mainroom, kitchen}.
+#table = [table][1..tnum].
+#chair = [chair][1..tnum][a..maxcapacity]. % Acually works but limits us to a restaurant with tables of 26 (should be ok)
+#locations = #table + #chair.
 
 predicates
 iswaiter(#person).
 iscustomer(#person).
-
+ischair(#chair).
+% To define parties, how do you do it since they can be from 1 to maximum
+% capacity of a table?
 
 rules
 % To do : find a way to declare iswaiter and iscustomer on whole customer
