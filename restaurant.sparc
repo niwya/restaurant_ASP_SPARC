@@ -17,33 +17,37 @@ sorts
 #basket = [basket][1..tnum]. % 1 bread basket per table
 #refillable = #jug + #basket.
 #cutlery = [cutlery][1..cnum]. % 1 fork+knife+spoon per client
-#nonrefillable = #cutlery. % Nosense but easier to add objects later
+#nonrefillable = #cutlery.
 #object = #refillable + #nonrefillable.
 
-% Consumables to refill refillable objects with - how to define an infinte
-% stock, does this def work 
-#consumable={tapwater, bread}.
+% Consumables to refill refillable objects with 
+#tapwater={sth}.
+#bread={sth2}.
+#consumable= #tapwater + #bread.
 
 % Environment
 #rooms = {mainroom, kitchen}.
 #table = [table][1..tnum].
-#chair = [chair][1..tnum][a..maxcapacity]. % Acually works but limits us to a restaurant with tables of 26 (should be ok)
-#locations = #table + #chair.
+#chair = [chair][1..tnum][a..maxcapacity]. 
 
 predicates
-iswaiter(#person).
-iscustomer(#person).
-ischair(#chair).
-% To define parties, how do you do it since they can be from 1 to maximum
-% capacity of a table?
+isonchair(#customer, #chair).
+isattable(#chair, #table).
+isempty(#table).
 
 rules
-% To do : find a way to declare iswaiter and iscustomer on whole customer
-% and waiter sort at once (with [w][1..wnum] might be possible)
-iswaiter(w1).
-iswaiter(w2).
-iscustomer(c1).
-iscustomer(c2).
-iscustomer(c3).
--iscustomer(X):- not iscustomer(X), iswaiter(X).
--iswaiter(X):- not iswaiter(X), iscustomer(X).
+isonchair(c1, chair1a).
+isonchair(c2, chair1b).
+isonchair(c3, chair3a).
+isattable(chair1a, table1).
+isattable(chair1b, table1).
+isattable(chair1c, table1).
+isattable(chair2a, table2).
+isattable(chair2b, table2).
+isattable(chair2c, table2).
+isattable(chair3a, table1).
+isattable(chair3b, table3).
+isattable(chair3c, table3).
+
+
+
