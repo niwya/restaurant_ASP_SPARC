@@ -33,7 +33,9 @@ sorts
 predicates
 isonchair(#customer, #chair).
 isattable(#chair, #table).
-isempty(#table).
+chairoccupied(#chair).
+tableoccupied(#table).
+
 
 rules
 isonchair(c1, chair1a).
@@ -45,9 +47,14 @@ isattable(chair1c, table1).
 isattable(chair2a, table2).
 isattable(chair2b, table2).
 isattable(chair2c, table2).
-isattable(chair3a, table1).
+isattable(chair3a, table3).
 isattable(chair3b, table3).
 isattable(chair3c, table3).
 
+% A chair or a table can be occupied but cannot be not occupied wtf
+-isonchair(X, Y):- isonchair(Z, Y), X!=Z. % Two people cannot share the same chair
+chairoccupied(X):- isonchair(Y, X).
+-chairoccupied(X):- -isonchair(Y, X).
+tableoccupied(X):- isonchair(Y, Z), chairoccupied(Z), isattable(Z, X).  % Y is customer, Z is chair, it does diplay unknown to an unoccupied table
 
 
