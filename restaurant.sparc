@@ -28,13 +28,14 @@ sorts
 % Environment
 #rooms = {mainroom, kitchen}.
 #table = [table][1..tnum].
-#chair = [chair][1..tnum][a..maxcapacity]. 
+#chair = [chair][1..tnum][a..maxcapacity].
+#furniture = #table + #chair.
 
 predicates
 isonchair(#customer, #chair).
 isattable(#chair, #table).
-chairoccupied(#chair).
-tableoccupied(#table).
+chairfree(#chair).
+tablefree(#table).
 
 
 rules
@@ -51,10 +52,17 @@ isattable(chair3a, table3).
 isattable(chair3b, table3).
 isattable(chair3c, table3).
 
-% A chair or a table can be occupied but cannot be not occupied wtf
--isonchair(X, Y):- isonchair(Z, Y), X!=Z. % Two people cannot share the same chair
-chairoccupied(X):- isonchair(Y, X).
--chairoccupied(X):- -isonchair(Y, X).
-tableoccupied(X):- isonchair(Y, Z), chairoccupied(Z), isattable(Z, X).  % Y is customer, Z is chair, it does diplay unknown to an unoccupied table
+% A chair is considered free unless stated otherwise
+chairfree(X):- not -chairfree(X).
+% A chair is not free if a client is seated on it
+-chairfree(X):- isonchair(Y, X).
+% Two people cannot share the same chair
+-isonchair(X, Y):- isonchair(Z, Y), X!=Z. 
+
+% A table is considered free unless stated otherwise
+tablefree(X):- not -tablefree(X).
+% A table is not free if a client is seated at a chair associated with said table
+-tablefree(X):- isonchair(Y, Z), -chairfree(Z), isattable(Z, X).
+
 
 
