@@ -26,12 +26,16 @@ sorts
 #consumable= #tapwater + #bread.
 
 % Environment
-#rooms = {mainroom, kitchen}.
+#room = {mainroom, kitchen}.
 #table = [table][1..tnum].
 #chair = [chair][1..tnum][a..maxcapacity].
-#furniture = #table + #chair.
+#furniture = #table + #chair + {counter}.
 
 predicates
+%% RESTAURANT LAYOUT %%
+isinroom(#furniture, #room).
+
+%% CUSTOMER PLACEMENT %%
 isonchair(#customer, #chair).
 isattable(#chair, #table).
 chairfree(#chair).
@@ -39,6 +43,16 @@ tablefree(#table).
 
 
 rules
+%% RESTAURANT LAYOUT %%
+isinroom(table1, mainroom).
+isinroom(table2, mainroom).
+isinroom(table3, mainroom).
+isinroom(counter, kitchen).
+isinroom(X, Y):- isattable(X, Z), isinroom(Z, Y).
+% A piece of furniture can only be in one room at once
+-isinroom(X, Y):- isinroom(X, Z), X!=Z. % Renders the program inconsistent : WHY
+
+%% CUSTOMER PLACEMENT %%
 isonchair(c1, chair1a).
 isonchair(c2, chair1b).
 isonchair(c3, chair3a).
