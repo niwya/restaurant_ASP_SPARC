@@ -21,6 +21,8 @@ dct={i:[] for i in keywords}
 for i in dct:
     for j in range(len(final_output)):
         if i in final_output[j]: dct[i].append(final_output[j])
-print(dct['holds'])
 
 # Displaying it properly #
+for i in dct:
+    for j in dct[i]:
+        print(j)
