@@ -1,0 +1,114 @@
+%% A dynamic version of the simple restaurant setup %%
+
+% Constants used %
+#const wnum=2. % Total number of waiters
+#const cnum=3. % Total number of customers
+#const tnum=4. % Total number of tables
+#const maxcapacity=2. % Maximum capacity of a table
+
+% Number of steps %
+#const n=1.
+
+sorts 
+% Step range %
+#step = 0..n.
+
+% Customers and waiters are referred to as a letter and a subscripted number
+#waiter=[w][1..wnum].
+#customer=[c][1..cnum].
+#person = #customer + #waiter.
+
+% Environment
+#room = {mainroom, kitchen}.
+#table = [table][1..tnum].
+#chair = [chair][1..tnum][1..maxcapacity].
+#furniture = #table + #chair + {counter, entrance}.
+
+#entity = #person + #furniture.
+
+% Actions and fluents
+#inertial_fluent= isonchair(#customer(Cu),#chair(Ch)) + iswaiting(#customer(Cu)) + isfree(#furniture(Fr)).
+#fluent = #inertial_fluent.
+
+#actionseat = seat(#customer(Cu), #chair(Ch)).
+#action = #actionseat.
+
+predicates
+holds(#fluent, #step).
+occurs(#action, #step).
+
+%% Associating a chair with its table %%
+isattable(#chair, #table).
+
+%% Entities in room %% 
+isinroom(#entity, #room).
+
+rules
+%% CAN BE MODIFIED AT WILL TO TEST DIFFERENT SITUATIONS %%
+%% Locations of tables %%
+isinroom(table1, mainroom).
+isinroom(table2, mainroom).
+isinroom(table3, mainroom).
+isinroom(table4, mainroom).
+isinroom(counter, kitchen).
+isinroom(entrance, mainroom).
+
+%% Locations of chairs at tables %%
+isattable(chair11, table1).
+isattable(chair12, table1).
+isattable(chair21, table2).
+isattable(chair22, table2).
+isattable(chair31, table3).
+isattable(chair32, table3).
+isattable(chair41, table4).
+isattable(chair42, table4).
+
+%% Locations of customers at initial step %%
+holds(isonchair(c1, chair11),0).
+holds(isonchair(c2, chair22),0).
+holds(iswaiting(c3),0).
+
+%% Actions %%
+occurs(seat(c1, chair21),0).
+occurs(seat(c2, chair41),0).
+
+%% PERMANENT RULES %%
+%% Inertia axiom %%
+holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
+-holds(F, I+1):- #inertial_fluent(F), -holds(F, I), not holds(F, I+1).
+
+%% A chair is free if no customer is sitting on it %%
+
+%% A table is free if all of its associated chairs are free %%
+
+%% It is impossible to seat a customer on an occupied chair %%
+-occurs(seat(Cu1,Ch),I):- holds(isonchair(Cu2,Ch),I), Cu2!=Cu1.
+
+%% Two customers cannot share the same chair at the same time %%
+-holds(isonchair(Cu2,Ch),I):- holds(isonchair(Cu1,Ch),I), Cu1!=Cu2.
+
+%% A customer cannot be on two chairs at the same time %% 
+-holds(isonchair(Cu,Ch1),I):- holds(isonchair(Cu,Ch2),I), Ch1!=Ch2.
+
+%% If customer Cu is not known to be on chair Ch at initial step, then he is not %%
+-holds(isonchair(Cu, Ch), 0):- not holds(isonchair(Cu, Ch), 0).
+
+%% If customer is seated on a chair at step I, he will be on it at step I+1 %%
+holds(isonchair(Cu,Ch), I+1):- occurs(seat(Cu,Ch), I).
+
+%% A customer is in the room his chair is in %%
+isinroom(Cu,R):- holds(isonchair(Cu,Ch),I), isinroom(Ch,R).
+
+%% A chair in in the room its associated table is in %%
+isinroom(Ch,R):- isattable(Ch,T), isinroom(T,R).
+
+%% An entity cannot be on multiple rooms at the same time %% 
+-isinroom(E,R1):- isinroom(E,R2), R1!=R2.
+
+%% The action of seating a customer removes him from the waiting area %%
+-holds(iswaiting(Cu),I):- occurs(seat(Cu,X),I).
+
+
+
+
+%display
