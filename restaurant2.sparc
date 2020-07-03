@@ -4,10 +4,11 @@
 #const wnum=2. % Total number of waiters
 #const cnum=3. % Total number of customers
 #const tnum=4. % Total number of tables
-#const maxcapacity=2. % Maximum capacity of a table
+#const maxcap1=2.
+#const maxcap2=4.
 
 % Number of steps %
-#const n=1.
+#const n=4.
 
 sorts 
 % Step range %
@@ -24,7 +25,9 @@ sorts
 % Environment
 #room = {mainroom, kitchen}.
 #table = [table][1..tnum].
-#chair = [chair][1..maxcapacity][t][1..tnum].
+#chair1 = [chair][1..maxcap1][t][1..2].
+#chair2 = [chair][1..maxcap2][t][3..4].
+#chair= #chair1 + #chair2.
 #customerfurniture = #table + #chair.
 #otherfurniture = {counter}.
 #furniture = #customerfurniture + #otherfurniture.
@@ -59,7 +62,7 @@ occurs(#action, #step).
 isinroom(#entity, #room).
 
 %% Occupancy of a table %%
-hasoccupancy(#table, #int, #step).
+%hasoccupancy(#table, #int, #step).
 
 rules
 %% CAN BE MODIFIED AT WILL TO TEST DIFFERENT SITUATIONS %%
@@ -79,8 +82,12 @@ holds(isattable(chair1t2, table2),0).
 holds(isattable(chair2t2, table2),0).
 holds(isattable(chair1t3, table3),0).
 holds(isattable(chair2t3, table3),0).
+holds(isattable(chair3t3, table3),0).
+holds(isattable(chair4t3, table3),0).
 holds(isattable(chair1t4, table4),0).
 holds(isattable(chair2t4, table4),0).
+holds(isattable(chair3t4, table4),0).
+holds(isattable(chair4t4, table4),0).
 
 %% Locations of customers at initial step %%
 holds(isonchair(c1, chair1t1),0).
@@ -88,22 +95,22 @@ holds(isonchair(c2, chair2t2),0).
 holds(iswaiting(c3),0).
 
 %% Actions %%
-occurs(seat_customer(c1, chair1t2),0).
-occurs(seat_customer(c2, chair1t4),0).
-occurs(move_chair(chair2t1, table2),0).
+occurs(move_chair(chair3t4,table3),0).
+occurs(seat_customer(c3, chair3t4),1).
+occurs(seat_customer(c3, chair2t1),2).
 
 %% PERMANENT RULES %%
 %% Inertia axiom %%
 holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 -holds(F, I+1):- #inertial_fluent(F), -holds(F, I), not holds(F, I+1).
 
-%% A chair is free unless stated otherwise
+%% A chair is free unless stated otherwise %%
 holds(isfree(Fr),I):- not -holds(isfree(Fr),I).
 
-%% A chair is free if no customer is sitting on it %%
+%% A chair is not free if a customer is sitting on it %%
 -holds(isfree(Fr),I):- #chair(Fr), holds(isonchair(Cu,Fr),I).
 
-%% A table is not free if one of its associated chairs is free %%
+%% A table is not free if one of its associated chairs is not free %%
 -holds(isfree(Fr),I):- #table(Fr), -holds(isfree(Ch),I), holds(isattable(Ch,Fr),I).
 
 %% It is impossible to seat a customer on an occupied chair %%
@@ -131,7 +138,7 @@ isinroom(Ch,R):- holds(isattable(Ch,T),I), isinroom(T,R).
 -isinroom(E,R1):- isinroom(E,R2), R1!=R2.
 
 %% The action of seating a customer removes him from the waiting area %%
--holds(iswaiting(Cu),I):- occurs(seat_customer(Cu,X),I).
+-holds(iswaiting(Cu),I+1):- occurs(seat_customer(Cu,X),I).
 
 %% A chair cannot be moved if it is not free %%
 -occurs(move_chair(Ch,T),I):- -holds(isfree(Ch),I).
@@ -140,9 +147,12 @@ isinroom(Ch,R):- holds(isattable(Ch,T),I), isinroom(T,R).
 holds(isattable(Ch,T),I+1):- occurs(move_chair(Ch,T),I).
 -holds(isattable(Ch,T1),I+1):- occurs(move_chair(Ch,T2),I), T1!=T2.
 
-%% When a client leaves a chair that has been displaced, said chair is put back at its initial table %%
+%% An inoccupied chair that has been displaced is put back at its initial table %%
+occurs(move_chair(Ch,T1),I+1):- holds(isfree(Ch),I), holds(isfree(Ch),I+1) , holds(isattable(Ch,T2),I), holds(isattable(Ch,T1),0), T1!=T2. %% Might be changed, weird rule
+
+
 
 %% If the agent goes to another room, it leaves the previous one %%
 
-%% A table has occupancy O at step I %%
+%% A table has occupancy O at step I - DOES NOT WORK %%
 %hasoccupancy(T,O,I):- #chair(Ch),O=#count{Ch:holds(isattable(T,Ch),I),-holds(isfree(Ch),I)}.
