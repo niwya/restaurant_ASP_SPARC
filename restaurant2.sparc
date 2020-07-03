@@ -13,6 +13,9 @@ sorts
 % Step range %
 #step = 0..n.
 
+% Integer sort %
+#int=1..20.
+
 % Customers and waiters are referred to as a letter and a subscripted number
 #waiter=[w][1..wnum].
 #customer=[c][1..cnum].
@@ -21,7 +24,7 @@ sorts
 % Environment
 #room = {mainroom, kitchen}.
 #table = [table][1..tnum].
-#chair = [chair][1..tnum][1..maxcapacity].
+#chair = [chair][1..maxcapacity][t][1..tnum].
 #customerfurniture = #table + #chair.
 #otherfurniture = {counter}.
 #furniture = #customerfurniture + #otherfurniture.
@@ -39,16 +42,24 @@ sorts
 #actionseat = seat_customer(#customer(Cu), #chair(Ch)).
 % The agent can move a chair to another table %
 #actionmove = move_chair(#chair(Ch), #table(T)).
+% The agent can bring the bill to a customer and cash in %%
+#actionpay = cash_in(#customer(Cu)).
+% The agent can change rooms %
+#actiongo = go_to(#room(R)).
 
 % All possible actions for the agent %
-#action = #actionseat + #actionmove.
+#action = #actionseat + #actionmove + #actionpay + #actiongo.
 
 predicates
+%% Gestion of fluents and actions %%
 holds(#fluent, #step).
 occurs(#action, #step).
 
 %% Entities in room %% 
 isinroom(#entity, #room).
+
+%% Occupancy of a table %%
+hasoccupancy(#table, #int, #step).
 
 rules
 %% CAN BE MODIFIED AT WILL TO TEST DIFFERENT SITUATIONS %%
@@ -62,23 +73,24 @@ isinroom(counter, kitchen).
 
 %% Locations of chairs at tables %%
 % Gives the initial configuration, but chairs can be moved to other tables at step I
-holds(isattable(chair11, table1),0).
-holds(isattable(chair12, table1),0).
-holds(isattable(chair21, table2),0).
-holds(isattable(chair22, table2),0).
-holds(isattable(chair31, table3),0).
-holds(isattable(chair32, table3),0).
-holds(isattable(chair41, table4),0).
-holds(isattable(chair42, table4),0).
+holds(isattable(chair1t1, table1),0).
+holds(isattable(chair2t1, table1),0).
+holds(isattable(chair1t2, table2),0).
+holds(isattable(chair2t2, table2),0).
+holds(isattable(chair1t3, table3),0).
+holds(isattable(chair2t3, table3),0).
+holds(isattable(chair1t4, table4),0).
+holds(isattable(chair2t4, table4),0).
 
 %% Locations of customers at initial step %%
-holds(isonchair(c1, chair11),0).
-holds(isonchair(c2, chair22),0).
+holds(isonchair(c1, chair1t1),0).
+holds(isonchair(c2, chair2t2),0).
 holds(iswaiting(c3),0).
 
 %% Actions %%
-occurs(seat_customer(c1, chair21),0).
-occurs(seat_customer(c2, chair41),0).
+occurs(seat_customer(c1, chair1t2),0).
+occurs(seat_customer(c2, chair1t4),0).
+occurs(move_chair(chair2t1, table2),0).
 
 %% PERMANENT RULES %%
 %% Inertia axiom %%
@@ -127,3 +139,10 @@ isinroom(Ch,R):- holds(isattable(Ch,T),I), isinroom(T,R).
 %% Moving a chair to another table causes this chair to be associated with the new table %%
 holds(isattable(Ch,T),I+1):- occurs(move_chair(Ch,T),I).
 -holds(isattable(Ch,T1),I+1):- occurs(move_chair(Ch,T2),I), T1!=T2.
+
+%% When a client leaves a chair that has been displaced, said chair is put back at its initial table %%
+
+%% If the agent goes to another room, it leaves the previous one %%
+
+%% A table has occupancy O at step I %%
+%hasoccupancy(T,O,I):- #chair(Ch),O=#count{Ch:holds(isattable(T,Ch),I),-holds(isfree(Ch),I)}.
