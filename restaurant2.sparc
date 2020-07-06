@@ -88,7 +88,7 @@ holds(isinroom(agent, mainroom),0).
 %occurs(move_chair(chair3t2,table1),1).
 occurs(seat_customer(c2, chair3t2),2).
 occurs(seat_customer(c2, chair2t1),3).
-%occurs(go_to(kitchen),3). %% Causes inconsistency
+occurs(go_to(kitchen),4).
 
 %%% PERMANENT RULES %%%
 %% Inertia axiom %%
@@ -157,9 +157,5 @@ holds(isinroom(Ch,R),I):- holds(isattable(Ch,T),I), holds(isinroom(T,R),I).
 %% An entity cannot be on multiple rooms at the same time %% 
 -holds(isinroom(E,R1),I):- holds(isinroom(E,R2),I), R1!=R2.
 
-%% Action go_to triggers the isinroom %%
+%% Action go_to triggers the isinroom for the agent %%
 holds(isinroom(agent,R),I+1):- occurs(go_to(R),I).
-
-%% Moving to another room causes the person to leave the previous room %%
-%-holds(isinroom(P,R2),I+1):- 
-
