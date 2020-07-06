@@ -8,7 +8,7 @@
 #const maxcap2=4.
 
 % Number of steps %
-#const n=4.
+#const n=5.
 
 sorts 
 % Step range %
@@ -29,7 +29,9 @@ sorts
 #otherfurniture = {counter}.
 #furniture = #customerfurniture + #otherfurniture.
 
-#entity = #person + #furniture.
+#moving_entity= #person + {agent}.
+#entity = #moving_entity + #furniture.
+
 
 % Actions and fluents
 % Can be directly/indirectly changed by actions (subject to inertia axiom)
@@ -59,7 +61,7 @@ occurs(#action, #step).
 %hasoccupancy(#table, #int, #step).
 
 rules
-%% CAN BE MODIFIED AT WILL TO TEST DIFFERENT SITUATIONS %%
+%%% LAYOUT AND INITIAL SITUATION %%%
 %% Locations of tables %%
 holds(isinroom(table1, mainroom),I).
 holds(isinroom(table2, mainroom),I).
@@ -78,12 +80,17 @@ holds(isattable(chair4t2, table2),0).
 holds(isonchair(c1, chair1t1),0).
 holds(iswaiting(c2),0).
 
+%% Location of waiters+agent at initial step %%
+holds(isinroom(w1, mainroom),0).
+holds(isinroom(agent, mainroom),0).
+
 %% Actions %%
 %occurs(move_chair(chair3t2,table1),1).
 occurs(seat_customer(c2, chair3t2),2).
 occurs(seat_customer(c2, chair2t1),3).
+%occurs(go_to(kitchen),3). %% Causes inconsistency
 
-%% PERMANENT RULES %%
+%%% PERMANENT RULES %%%
 %% Inertia axiom %%
 holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 -holds(F, I+1):- #inertial_fluent(F), -holds(F, I), not holds(F, I+1).
@@ -95,17 +102,16 @@ holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 -occurs(A2,I):- occurs(A1,I), A2!=A1.
 
 %% CWA for defined fluents %%
-%-holds(F,I):- #defined_fluent(F), not holds(F,I).
+-holds(F,I):- #defined_fluent(F), not holds(F,I).
 
+
+%% CHAIRS %%
 %% A chair is free unless stated otherwise %%
 holds(isfree(Fr),I):- not -holds(isfree(Fr),I).
 
 %% A chair is not free if a customer is sitting on it %%
 %holds(isfree(Fr),I):- #chair(Fr), not holds(isonchair(Cu,Fr),I). %Chair is labeled as free all the time
 -holds(isfree(Fr),I):- #chair(Fr), holds(isonchair(Cu,Fr),I). %Chair is labeled as free until a customer is sat on it, even if he moves, stays occupied
-
-%% A table is not free if one of its associated chairs is not free %%
--holds(isfree(Fr),I):- #table(Fr), -holds(isfree(Ch),I), holds(isattable(Ch,Fr),I).
 
 %% It is impossible to seat a customer on an occupied chair %%
 -occurs(seat_customer(Cu1,Ch),I):- holds(isonchair(Cu2,Ch),I), Cu2!=Cu1.
@@ -122,16 +128,7 @@ holds(isfree(Fr),I):- not -holds(isfree(Fr),I).
 %% If customer is seated on a chair at step I, he will be on it at step I+1 %%
 holds(isonchair(Cu,Ch), I+1):- occurs(seat_customer(Cu,Ch), I).
 
-%% A customer, if seated, is in the room his chair is in %%
-holds(isinroom(Cu,R),I):- holds(isonchair(Cu,Ch),I), holds(isinroom(Ch,R),I).
-
-%% A chair in in the room its associated table is in %%
-holds(isinroom(Ch,R),I):- holds(isattable(Ch,T),I), holds(isinroom(T,R),I).
-
-%% An entity cannot be on multiple rooms at the same time %% 
--holds(isinroom(E,R1),I):- holds(isinroom(E,R2),I), R1!=R2.
-
-%% The action of seating a customer removes him from the waiting area %%
+%% The action of seating a customer causes said customer not to be waiting anymore %%
 -holds(iswaiting(Cu),I+1):- occurs(seat_customer(Cu,X),I).
 
 %% A chair cannot be moved if it is not free %%
@@ -141,10 +138,28 @@ holds(isinroom(Ch,R),I):- holds(isattable(Ch,T),I), holds(isinroom(T,R),I).
 holds(isattable(Ch,T),I+1):- occurs(move_chair(Ch,T),I).
 -holds(isattable(Ch,T1),I+1):- occurs(move_chair(Ch,T2),I), T1!=T2.
 
-
-
-
-%% Moving to another room causes the person to leave the previous room %%
-
 %% An inoccupied chair that has been displaced is put back at its initial table %%
 %occurs(move_chair(Ch,T1),I+1):- holds(isfree(Ch),I), holds(isfree(Ch),I+1), holds(isattable(Ch,T2),I), holds(isattable(Ch,T1),0), T1!=T2.
+
+
+%% TABLES %%
+%% A table is not free if one of its associated chairs is not free %%
+-holds(isfree(Fr),I):- #table(Fr), -holds(isfree(Ch),I), holds(isattable(Ch,Fr),I).
+
+
+%% ROOMS %%
+%% A customer, if seated, is in the room his chair is in %%
+holds(isinroom(Cu,R),I):- holds(isonchair(Cu,Ch),I), holds(isinroom(Ch,R),I).
+
+%% A chair in in the room its associated table is in %%
+holds(isinroom(Ch,R),I):- holds(isattable(Ch,T),I), holds(isinroom(T,R),I).
+
+%% An entity cannot be on multiple rooms at the same time %% 
+-holds(isinroom(E,R1),I):- holds(isinroom(E,R2),I), R1!=R2.
+
+%% Action go_to triggers the isinroom %%
+holds(isinroom(agent,R),I+1):- occurs(go_to(R),I).
+
+%% Moving to another room causes the person to leave the previous room %%
+%-holds(isinroom(P,R2),I+1):- 
+
