@@ -1,9 +1,9 @@
 %% A dynamic version of the simple restaurant setup %%
 
 % Constants used %
-#const wnum=2. % Total number of waiters
-#const cnum=3. % Total number of customers
-#const tnum=4. % Total number of tables
+#const wnum=1. % Total number of waiters
+#const cnum=2. % Total number of customers
+#const tnum=2. % Total number of tables
 #const maxcap1=2.
 #const maxcap2=4.
 
@@ -14,9 +14,6 @@ sorts
 % Step range %
 #step = 0..n.
 
-% Integer sort %
-#int=1..20.
-
 % Customers and waiters are referred to as a letter and a subscripted number
 #waiter=[w][1..wnum].
 #customer=[c][1..cnum].
@@ -25,8 +22,8 @@ sorts
 % Environment
 #room = {mainroom, kitchen}.
 #table = [table][1..tnum].
-#chair1 = [chair][1..maxcap1][t][1..2].
-#chair2 = [chair][1..maxcap2][t][3..4].
+#chair1 = [chair][1..maxcap1][t][1..1].
+#chair2 = [chair][1..maxcap2][t][2..2].
 #chair= #chair1 + #chair2.
 #customerfurniture = #table + #chair.
 #otherfurniture = {counter}.
@@ -38,14 +35,14 @@ sorts
 % Can be directly/indirectly changed by actions (subject to inertia axiom)
 #inertial_fluent= isonchair(#customer(Cu),#chair(Ch)) + iswaiting(#customer(Cu)) + isattable(#chair(Ch), #table(T)) + isfree(#customerfurniture(Fr)). 
 % Are defined in terms of other fluents
-%#defined_fluent=. 
-#fluent = #inertial_fluent.
+#defined_fluent= isinroom(#entity(E),#room(R)). 
+#fluent = #inertial_fluent + #defined_fluent.
 
 % The agent can seat clients, might be useful to change to seat him at table on whatever free chair %
 #actionseat = seat_customer(#customer(Cu), #chair(Ch)).
 % The agent can move a chair to another table %
 #actionmove = move_chair(#chair(Ch), #table(T)).
-% The agent can bring the bill to a customer and cash in %%
+% The agent can bring the bill to a customer and cash in %
 #actionpay = cash_in(#customer(Cu)).
 % The agent can change rooms %
 #actiongo = go_to(#room(R)).
@@ -58,21 +55,15 @@ predicates
 holds(#fluent, #step).
 occurs(#action, #step).
 
-%% Entities in room %% 
-isinroom(#entity, #room).
-
 %% Occupancy of a table %%
 %hasoccupancy(#table, #int, #step).
 
 rules
 %% CAN BE MODIFIED AT WILL TO TEST DIFFERENT SITUATIONS %%
 %% Locations of tables %%
-isinroom(table1, mainroom).
-isinroom(table2, mainroom).
-isinroom(table3, mainroom).
-isinroom(table4, mainroom).
-isinroom(counter, kitchen).
-%isinroom(entrance, mainroom).
+holds(isinroom(table1, mainroom),I).
+holds(isinroom(table2, mainroom),I).
+holds(isinroom(counter, kitchen),I).
 
 %% Locations of chairs at tables %%
 % Gives the initial configuration, but chairs can be moved to other tables at step I
@@ -80,35 +71,38 @@ holds(isattable(chair1t1, table1),0).
 holds(isattable(chair2t1, table1),0).
 holds(isattable(chair1t2, table2),0).
 holds(isattable(chair2t2, table2),0).
-holds(isattable(chair1t3, table3),0).
-holds(isattable(chair2t3, table3),0).
-holds(isattable(chair3t3, table3),0).
-holds(isattable(chair4t3, table3),0).
-holds(isattable(chair1t4, table4),0).
-holds(isattable(chair2t4, table4),0).
-holds(isattable(chair3t4, table4),0).
-holds(isattable(chair4t4, table4),0).
+holds(isattable(chair3t2, table2),0).
+holds(isattable(chair4t2, table2),0).
 
 %% Locations of customers at initial step %%
 holds(isonchair(c1, chair1t1),0).
-holds(isonchair(c2, chair2t2),0).
-holds(iswaiting(c3),0).
+holds(iswaiting(c2),0).
 
 %% Actions %%
-occurs(move_chair(chair3t4,table3),0).
-occurs(seat_customer(c3, chair3t4),1).
-occurs(seat_customer(c3, chair2t1),2).
+%occurs(move_chair(chair3t2,table1),1).
+occurs(seat_customer(c2, chair3t2),2).
+occurs(seat_customer(c2, chair2t1),3).
 
 %% PERMANENT RULES %%
 %% Inertia axiom %%
 holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 -holds(F, I+1):- #inertial_fluent(F), -holds(F, I), not holds(F, I+1).
 
+%% Closed World Assumption for actions (if not known to occur, doesnt occur)  %%
+-occurs(A,I):- not occurs(A,I).
+
+%% Non-simultaneity of actions (the robot can only do 1 thing at a said step) %%
+-occurs(A2,I):- occurs(A1,I), A2!=A1.
+
+%% CWA for defined fluents %%
+%-holds(F,I):- #defined_fluent(F), not holds(F,I).
+
 %% A chair is free unless stated otherwise %%
 holds(isfree(Fr),I):- not -holds(isfree(Fr),I).
 
 %% A chair is not free if a customer is sitting on it %%
--holds(isfree(Fr),I):- #chair(Fr), holds(isonchair(Cu,Fr),I).
+%holds(isfree(Fr),I):- #chair(Fr), not holds(isonchair(Cu,Fr),I). %Chair is labeled as free all the time
+-holds(isfree(Fr),I):- #chair(Fr), holds(isonchair(Cu,Fr),I). %Chair is labeled as free until a customer is sat on it, even if he moves, stays occupied
 
 %% A table is not free if one of its associated chairs is not free %%
 -holds(isfree(Fr),I):- #table(Fr), -holds(isfree(Ch),I), holds(isattable(Ch,Fr),I).
@@ -129,13 +123,13 @@ holds(isfree(Fr),I):- not -holds(isfree(Fr),I).
 holds(isonchair(Cu,Ch), I+1):- occurs(seat_customer(Cu,Ch), I).
 
 %% A customer, if seated, is in the room his chair is in %%
-isinroom(Cu,R):- holds(isonchair(Cu,Ch),I), isinroom(Ch,R).
+holds(isinroom(Cu,R),I):- holds(isonchair(Cu,Ch),I), holds(isinroom(Ch,R),I).
 
 %% A chair in in the room its associated table is in %%
-isinroom(Ch,R):- holds(isattable(Ch,T),I), isinroom(T,R).
+holds(isinroom(Ch,R),I):- holds(isattable(Ch,T),I), holds(isinroom(T,R),I).
 
 %% An entity cannot be on multiple rooms at the same time %% 
--isinroom(E,R1):- isinroom(E,R2), R1!=R2.
+-holds(isinroom(E,R1),I):- holds(isinroom(E,R2),I), R1!=R2.
 
 %% The action of seating a customer removes him from the waiting area %%
 -holds(iswaiting(Cu),I+1):- occurs(seat_customer(Cu,X),I).
@@ -147,12 +141,10 @@ isinroom(Ch,R):- holds(isattable(Ch,T),I), isinroom(T,R).
 holds(isattable(Ch,T),I+1):- occurs(move_chair(Ch,T),I).
 -holds(isattable(Ch,T1),I+1):- occurs(move_chair(Ch,T2),I), T1!=T2.
 
+
+
+
+%% Moving to another room causes the person to leave the previous room %%
+
 %% An inoccupied chair that has been displaced is put back at its initial table %%
-occurs(move_chair(Ch,T1),I+1):- holds(isfree(Ch),I), holds(isfree(Ch),I+1) , holds(isattable(Ch,T2),I), holds(isattable(Ch,T1),0), T1!=T2. %% Might be changed, weird rule
-
-
-
-%% If the agent goes to another room, it leaves the previous one %%
-
-%% A table has occupancy O at step I - DOES NOT WORK %%
-%hasoccupancy(T,O,I):- #chair(Ch),O=#count{Ch:holds(isattable(T,Ch),I),-holds(isfree(Ch),I)}.
+%occurs(move_chair(Ch,T1),I+1):- holds(isfree(Ch),I), holds(isfree(Ch),I+1), holds(isattable(Ch,T2),I), holds(isattable(Ch,T1),0), T1!=T2.
