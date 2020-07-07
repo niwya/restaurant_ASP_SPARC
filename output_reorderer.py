@@ -26,3 +26,5 @@ for i in dct:
 for i in dct:
     for j in dct[i]:
         print(j)
+
+# Careful : only works well with a single answer set - add a feature to separate answer sets #

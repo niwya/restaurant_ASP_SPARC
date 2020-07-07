@@ -20,7 +20,7 @@ sorts
 #person = #customer + #waiter.
 
 % Environment
-#room = {mainroom, kitchen}.
+#room = {mainroom, kitchen, entrance}.
 #table = [table][1..tnum].
 #chair1 = [chair][1..maxcap1][t][1..1].
 #chair2 = [chair][1..maxcap2][t][2..2].
@@ -144,13 +144,12 @@ holds(canbemovedback(Ch,T1),I):- holds(isfree(Ch),I), holds(isattable(Ch,T1),0),
 %% A chair cannot be moved back if it is not free %%
 -holds(canbemovedback(Ch,T1),I):- -holds(isfree(Ch),I).
 
-%% A chair cannot be moved back if it has not moved %% SHOULD FIX THE 'UNKNOWN PB', DOESNT WORK
-%-holds(canbemovedback(Ch,T),I):- -occurs(move_chair(Ch,T),J), J<I.
+%% A chair cannot be moved back if it has not moved %%
+-holds(canbemovedback(Ch,T1),I):- -occurs(move_chair(Ch,T2),J), J<I, J>0, holds(isattable(Ch,T1),0), T2!=T1. %% WORKS BUT THE MOVED CHAIRS CAN BE MOVED BACK ON ANY TABLE
 
-%% When a client is brought its bill at step I, he pays and is gone at step I+1 (i.e frees its chair) %% DOES NOT WORK
+%% When a client is brought his bill at step I, he pays and frees his chair at step I+1 (i.e frees its chair) %% INCONSISTENT
 %holds(isfree(Ch),I+1):- occurs(bring_bill(Cu),I), holds(isonchair(Cu,Ch),I). 
 
-%% Bringing the bill to a client causes the agent to be at the table the client is %%
 
 
 %% TABLES %%
@@ -159,6 +158,9 @@ holds(canbemovedback(Ch,T1),I):- holds(isfree(Ch),I), holds(isattable(Ch,T1),0),
 
 
 %% ROOMS %%
+%% A customer who is waiting is in the entrance %%
+holds(isinroom(Cu,entrance),I):- holds(iswaiting(Cu),I).
+
 %% A customer, if seated, is in the room his chair is in %%
 holds(isinroom(Cu,R),I):- holds(isonchair(Cu,Ch),I), holds(isinroom(Ch,R),I).
 
@@ -170,3 +172,14 @@ holds(isinroom(Ch,R),I):- holds(isattable(Ch,T),I), holds(isinroom(T,R),I).
 
 %% Action go_to triggers the isinroom for the agent %%
 holds(isinroom(agent,R),I+1):- occurs(go_to(R),I).
+
+%% When a client is brought his bill at step I, he pays and leaves the restaurant at step I+1 %%
+holds(hasleft(Cu),I+1):- occurs(bring_bill(Cu),I).
+
+%% If a customer has not paid yet, and is seated, then he has not left  %% This rule solves the problem of seated customers who have not paid yet BUT seems to render the inertia axiom inefficient
+-holds(hasleft(Cu),I):- -occurs(bring_bill(Cu),J), holds(isonchair(Cu,Ch),J), J<I. 
+
+%% If a customer is in the entrance at step I, is not anymore at step I+1 and has not been steated, then he has left %%
+
+%% When a client has left the restaurant, he is not in any room anymore %% INCONSISTENT
+%-holds(isinroom(Cu,R),I):- #customer(Cu), #room(R), holds(hasleft(Cu),I).
