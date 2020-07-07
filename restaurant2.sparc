@@ -35,17 +35,18 @@ sorts
 
 % Actions and fluents
 % Can be directly/indirectly changed by actions (subject to inertia axiom)
-#inertial_fluent= isonchair(#customer(Cu),#chair(Ch)) + iswaiting(#customer(Cu)) + isattable(#chair(Ch), #table(T)) + isfree(#customerfurniture(Fr)). 
+#inertial_fluent= isonchair(#customer(Cu),#chair(Ch)) + iswaiting(#customer(Cu)) + isattable(#chair(Ch), #table(T)) + 
+isfree(#customerfurniture(Fr)) + isinroom(#entity(E),#room(R)) + canbemovedback(#chair(Ch),#table(T)) + hasleft(#customer(Cu)). 
 % Are defined in terms of other fluents
-#defined_fluent= isinroom(#entity(E),#room(R)). 
-#fluent = #inertial_fluent + #defined_fluent.
+%#defined_fluent=. 
+#fluent = #inertial_fluent.
 
 % The agent can seat clients, might be useful to change to seat him at table on whatever free chair %
 #actionseat = seat_customer(#customer(Cu), #chair(Ch)).
 % The agent can move a chair to another table %
 #actionmove = move_chair(#chair(Ch), #table(T)).
 % The agent can bring the bill to a customer and cash in %
-#actionpay = cash_in(#customer(Cu)).
+#actionpay = bring_bill(#customer(Cu)).
 % The agent can change rooms %
 #actiongo = go_to(#room(R)).
 
@@ -85,10 +86,9 @@ holds(isinroom(w1, mainroom),0).
 holds(isinroom(agent, mainroom),0).
 
 %% Actions %%
-%occurs(move_chair(chair3t2,table1),1).
-occurs(seat_customer(c2, chair3t2),2).
-occurs(seat_customer(c2, chair2t1),3).
-occurs(go_to(kitchen),4).
+occurs(move_chair(chair2t2,table1),1).
+occurs(seat_customer(c2, chair2t2),2).
+occurs(bring_bill(c2),3).
 
 %%% PERMANENT RULES %%%
 %% Inertia axiom %%
@@ -102,7 +102,7 @@ holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 -occurs(A2,I):- occurs(A1,I), A2!=A1.
 
 %% CWA for defined fluents %%
--holds(F,I):- #defined_fluent(F), not holds(F,I).
+%-holds(F,I):- #defined_fluent(F), not holds(F,I).
 
 
 %% CHAIRS %%
@@ -110,8 +110,8 @@ holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 holds(isfree(Fr),I):- not -holds(isfree(Fr),I).
 
 %% A chair is not free if a customer is sitting on it %%
-%holds(isfree(Fr),I):- #chair(Fr), not holds(isonchair(Cu,Fr),I). %Chair is labeled as free all the time
--holds(isfree(Fr),I):- #chair(Fr), holds(isonchair(Cu,Fr),I). %Chair is labeled as free until a customer is sat on it, even if he moves, stays occupied
+-holds(isfree(Fr),I):- #chair(Fr), holds(isonchair(Cu,Fr),I).
+holds(isfree(Fr),I+1):- #chair(Fr), holds(isonchair(Cu,Fr),I), occurs(seat_customer(Cu,Ch),I), Ch!=Fr.
 
 %% It is impossible to seat a customer on an occupied chair %%
 -occurs(seat_customer(Cu1,Ch),I):- holds(isonchair(Cu2,Ch),I), Cu2!=Cu1.
@@ -138,8 +138,19 @@ holds(isonchair(Cu,Ch), I+1):- occurs(seat_customer(Cu,Ch), I).
 holds(isattable(Ch,T),I+1):- occurs(move_chair(Ch,T),I).
 -holds(isattable(Ch,T1),I+1):- occurs(move_chair(Ch,T2),I), T1!=T2.
 
-%% An inoccupied chair that has been displaced is put back at its initial table %%
-%occurs(move_chair(Ch,T1),I+1):- holds(isfree(Ch),I), holds(isfree(Ch),I+1), holds(isattable(Ch,T2),I), holds(isattable(Ch,T1),0), T1!=T2.
+%% An inoccupied chair that has been displaced can be put back at its initial table %%
+holds(canbemovedback(Ch,T1),I):- holds(isfree(Ch),I), holds(isattable(Ch,T1),0), holds(isattable(Ch,T2),I), T2!=T1.
+
+%% A chair cannot be moved back if it is not free %%
+-holds(canbemovedback(Ch,T1),I):- -holds(isfree(Ch),I).
+
+%% A chair cannot be moved back if it has not moved %% SHOULD FIX THE 'UNKNOWN PB', DOESNT WORK
+%-holds(canbemovedback(Ch,T),I):- -occurs(move_chair(Ch,T),J), J<I.
+
+%% When a client is brought its bill at step I, he pays and is gone at step I+1 (i.e frees its chair) %% DOES NOT WORK
+%holds(isfree(Ch),I+1):- occurs(bring_bill(Cu),I), holds(isonchair(Cu,Ch),I). 
+
+%% Bringing the bill to a client causes the agent to be at the table the client is %%
 
 
 %% TABLES %%
