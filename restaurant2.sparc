@@ -3,7 +3,7 @@
 % Constants used %
 #const wnum=1. % Total number of waiters
 #const cnum=2. % Total number of customers
-#const tnum=2. % Total number of tables
+#const tnum=3. % Total number of tables
 #const maxcap1=2.
 #const maxcap2=4.
 
@@ -23,20 +23,21 @@ sorts
 #room = {mainroom, kitchen, entrance}.
 #table = [table][1..tnum].
 #chair1 = [chair][1..maxcap1][t][1..1].
-#chair2 = [chair][1..maxcap2][t][2..2].
+#chair2 = [chair][1..maxcap2][t][2..3].
 #chair= #chair1 + #chair2.
 #customerfurniture = #table + #chair.
-#otherfurniture = {counter}.
+#otherfurniture = {counter, door}.
 #furniture = #customerfurniture + #otherfurniture.
 
 #moving_entity= #person + {agent}.
-#entity = #moving_entity + #furniture.
+#node = {a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q}.
+#entity = #moving_entity + #furniture +#node.
 
 
 % Actions and fluents
 % Can be directly/indirectly changed by actions (subject to inertia axiom)
 #inertial_fluent= isonchair(#customer(Cu),#chair(Ch)) + iswaiting(#customer(Cu)) + isattable(#chair(Ch), #table(T)) + 
-isfree(#customerfurniture(Fr)) + isinroom(#entity(E),#room(R)) + canbemovedback(#chair(Ch),#table(T)) + hasleft(#customer(Cu)). 
+isfree(#customerfurniture(Fr)) + isinroom(#entity(E),#room(R)) + canbemovedback(#chair(Ch),#table(T)) + haspaid(#customer(Cu)) + hasleft(#customer(Cu)). 
 % Are defined in terms of other fluents
 %#defined_fluent=. 
 #fluent = #inertial_fluent.
@@ -47,26 +48,30 @@ isfree(#customerfurniture(Fr)) + isinroom(#entity(E),#room(R)) + canbemovedback(
 #actionmove = move_chair(#chair(Ch), #table(T)).
 % The agent can bring the bill to a customer and cash in %
 #actionpay = bring_bill(#customer(Cu)).
-% The agent can change rooms %
-#actiongo = go_to(#room(R)).
+% The agent can go on predefinite locations %
+#actiongo = go_to(#node(N)).
 
 % All possible actions for the agent %
-#action = #actionseat + #actionmove + #actionpay + #actiongo.
+#action = #actionseat + #actionmove + #actionpay+ #actiongo.
+
 
 predicates
+%% Paths %%
+edge(#node,#node).
+areassociated(#node,#furniture).
+
 %% Gestion of fluents and actions %%
 holds(#fluent, #step).
 occurs(#action, #step).
-
-%% Occupancy of a table %%
-%hasoccupancy(#table, #int, #step).
 
 rules
 %%% LAYOUT AND INITIAL SITUATION %%%
 %% Locations of tables %%
 holds(isinroom(table1, mainroom),I).
 holds(isinroom(table2, mainroom),I).
+holds(isinroom(table3, mainroom),I).
 holds(isinroom(counter, kitchen),I).
+holds(isinroom(door, entrance),I).
 
 %% Locations of chairs at tables %%
 % Gives the initial configuration, but chairs can be moved to other tables at step I
@@ -76,9 +81,33 @@ holds(isattable(chair1t2, table2),0).
 holds(isattable(chair2t2, table2),0).
 holds(isattable(chair3t2, table2),0).
 holds(isattable(chair4t2, table2),0).
+holds(isattable(chair1t3, table3),0).
+holds(isattable(chair2t3, table3),0).
+holds(isattable(chair3t3, table3),0).
+holds(isattable(chair4t3, table3),0).
+
+%% Paths linking nodes %%
+edge(a,b).
+edge(b,a).  edge(b,c).
+edge(c,b).  edge(c,d).
+edge(d,c).  edge(d,e).  edge(d,h).  edge(d,j).
+edge(e,d).  edge(e,f).
+edge(f,e).  edge(f,g).
+edge(g,f).
+edge(h,d).  edge(h,i).
+edge(i,h).
+edge(j,d).  edge(j,k).  edge(j,o).
+edge(k,j).  edge(k,l).
+edge(l,k).  edge(l,n).  edge(l,m).
+edge(m,l).
+edge(n,l).
+edge(o,p).  edge(o,q).  edge(o,j).
+edge(p,o).
+edge(q,o).
 
 %% Locations of customers at initial step %%
-holds(isonchair(c1, chair1t1),0).
+holds(iswaiting(c1),0).
+-holds(iswaiting(c1),2).
 holds(iswaiting(c2),0).
 
 %% Location of waiters+agent at initial step %%
@@ -144,11 +173,8 @@ holds(canbemovedback(Ch,T1),I):- holds(isfree(Ch),I), holds(isattable(Ch,T1),0),
 %% A chair cannot be moved back if it is not free %%
 -holds(canbemovedback(Ch,T1),I):- -holds(isfree(Ch),I).
 
-%% A chair cannot be moved back if it has not moved %%
--holds(canbemovedback(Ch,T1),I):- -occurs(move_chair(Ch,T2),J), J<I, J>0, holds(isattable(Ch,T1),0), T2!=T1. %% WORKS BUT THE MOVED CHAIRS CAN BE MOVED BACK ON ANY TABLE
-
-%% When a client is brought his bill at step I, he pays and frees his chair at step I+1 (i.e frees its chair) %% INCONSISTENT
-%holds(isfree(Ch),I+1):- occurs(bring_bill(Cu),I), holds(isonchair(Cu,Ch),I). 
+%% A chair cannot be moved back if it has not moved %% INCONSISTENT
+%-holds(canbemovedback(Ch,T1),I):- -occurs(move_chair(Ch,T2),J), J<I, J>0, holds(isattable(Ch,T1),0), T1!=T2. %%
 
 
 
@@ -170,16 +196,45 @@ holds(isinroom(Ch,R),I):- holds(isattable(Ch,T),I), holds(isinroom(T,R),I).
 %% An entity cannot be on multiple rooms at the same time %% 
 -holds(isinroom(E,R1),I):- holds(isinroom(E,R2),I), R1!=R2.
 
-%% Action go_to triggers the isinroom for the agent %%
-holds(isinroom(agent,R),I+1):- occurs(go_to(R),I).
-
-%% When a client is brought his bill at step I, he pays and leaves the restaurant at step I+1 %%
-holds(hasleft(Cu),I+1):- occurs(bring_bill(Cu),I).
-
-%% If a customer has not paid yet, and is seated, then he has not left  %% This rule solves the problem of seated customers who have not paid yet BUT seems to render the inertia axiom inefficient
--holds(hasleft(Cu),I):- -occurs(bring_bill(Cu),J), holds(isonchair(Cu,Ch),J), J<I. 
-
 %% If a customer is in the entrance at step I, is not anymore at step I+1 and has not been steated, then he has left %%
+holds(hasleft(Cu),I+1):- holds(iswaiting(Cu),I), -holds(iswaiting(Cu),I+1), -occurs(seat_customer(Cu,Ch),I).
 
-%% When a client has left the restaurant, he is not in any room anymore %% INCONSISTENT
-%-holds(isinroom(Cu,R),I):- #customer(Cu), #room(R), holds(hasleft(Cu),I).
+%% When a client has left the restaurant, he is not in any room anymore %% INCONSISTENT but should be corrected, useful 
+%-holds(isinroom(Cu,R),I+1):- holds(hasleft(Cu),I+1), holds(isinroom(Cu,R),I).
+
+%% If something or someone is not known to be in room R at step, then it or he is not %%
+-holds(isinroom(Cu,R),0):- not holds(isinroom(Cu,R),0). 
+
+%% If a customer is not known to have left at step 0, then he has not %%
+-holds(hasleft(Cu),0):- not holds(hasleft(Cu),0).
+
+%% A client has left if he is not in any room anymore %%
+
+
+%% PATHS THE AGENT CAN FOLLOW %%
+%% To go to a table/chair/customer, the agent must go to an associated node nearby (there can be multiple) %%
+%% Two nodes that are not known to be associated to a piece of furniture are not %%
+-areassociated(N,F):- not areassociated(N,F).
+%% A node associated with a piece of furniture is in the room the furniture is %%
+holds(isinroom(N,R),I):- #furniture(F), areassociated(N,F), holds(isinroom(F,R),I).
+%% Node e is associated to door %%
+areassociated(e,door).
+%% Node f is associated to table1 %%
+areassociated(f,table1).
+%% Nodes f and h are associated to table2 %%
+areassociated(f,table2).
+areassociated(h,table2).
+%% Nodes h and k are associated to table3 %%
+areassociated(h,table3).
+areassociated(k,table3).
+%% Nodes a and b are associated to the counter %%
+areassociated(a,counter).
+areassociated(b,counter).
+%% The agent can only go from one node to another in 1 step if the two nodes are linked togethere by an edge %%
+
+
+%% Action seat_customer requires that the agents seeks for the customer at entrance (node e), then holds(iswithagent(Cu),I) becomes true and
+%% agent can go near a table where there is a free chair and seat the customer then holds(iswithagent(Cu),I) becomes false
+
+%% Action bring_bill requires that the agent goes to a node associated with the table the client who wants to pay is at, then when he is we 
+%% have holds(haspaid(Cu),I) that becomes true - the client is then expected to leave but dunno when (will be observed)
