@@ -10,7 +10,7 @@
 #const maxcap2=4.
 
 % Number of steps %
-#const n=5.
+#const n=6.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 sorts 
@@ -130,7 +130,7 @@ holds(iswaiting(c2),0).
 %----------------------------------------------------------------------------------------%
 %% Location of waiters+agent %%
 holds(isinroom(w1, mainroom),0).
-holds(currentlocation(e),0).
+holds(currentlocation(f),0).
 %----------------------------------------------------------------------------------------%
 %----------------------------------------------------------------------------------------%
 %% Goal %% 
@@ -142,8 +142,10 @@ occurs(A,I) | -occurs(A,I) :- not goal(I).
 something_happened(I):- occurs(A,I).
 :- goal(I), not goal(I-1), J<I, not something_happened(J).
 %----------------------------------------------------------------------------------------%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SET GOALS HERE %
-goal(I):- holds(currentlocation(h),I).
+goal(I):- holds(isattable(chair1t1,table2),I).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------------------------------------------------------------------%
 %----------------------------------------------------------------------------------------%
 %%% PERMANENT RULES %%%
@@ -179,7 +181,7 @@ holds(isfree(Fr),I+1):- #chair(Fr), holds(isonchair(Cu,Fr),I), occurs(seat_custo
 -holds(isonchair(Cu, Ch), 0):- not holds(isonchair(Cu, Ch), 0).
 %----------------------------------------------------------------------------------------%
 %% An occupied chair cannot be picked up %%
-%-occurs(pick(Ch,T),I):- #chair(Ch), #table(T), -holds(isfree(Ch),I).
+-occurs(pick(Ch,T),I):- #chair(Ch), #table(T), -holds(isfree(Ch),I).
 %----------------------------------------------------------------------------------------%
 %% A chair can only be picked up from a node associated with the table it is at %%
 -occurs(pick(Ch,T),I):-  #chair(Ch), #table(T), -holds(currentlocation(N),I), areassociated(N,T), holds(isattable(Ch,T),I).
@@ -188,7 +190,7 @@ holds(isfree(Fr),I+1):- #chair(Fr), holds(isonchair(Cu,Fr),I), occurs(seat_custo
 -holds(isattable(Ch,T),I+1):- #chair(Ch), #table(T), occurs(pick(Ch,T),I).
 %----------------------------------------------------------------------------------------%
 %% A chair can be dropped at a table only if all chairs at table are full %%
--occurs(drop(Ch,T),I):-  #chair(Ch), #table(T), holds(isfree(Ch),I), holds(isattable(Ch,T),I).
+%-occurs(drop(Ch,T),I):-  #chair(Ch), #table(T), holds(isfree(Ch),I), holds(isattable(Ch,T),I).
 %----------------------------------------------------------------------------------------%
 %% A chair can only be dropped at a table from a node associated with said table %%
 -occurs(drop(Ch,T),I):-  #chair(Ch), #table(T), -holds(currentlocation(N),I), areassociated(N,T).
@@ -301,8 +303,3 @@ holds(haspaid(Cu),I+1):- occurs(bring_bill(Cu),I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% NOTES %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Action seat_customer requires that the agents seeks for the customer at entrance (node e), then holds(iswithagent(Cu),I) becomes true and
-%% agent can go near a table where there is a free chair and seat the customer then holds(iswithagent(Cu),I) becomes false
-%----------------------------------------------------------------------------------------%
-%% Action bring_bill requires that the agent goes to a node associated with the table the client who wants to pay is at, then when he is we 
-%% have holds(haspaid(Cu),I) that becomes true - the client is then expected to leave but dunno when (will be observed)
