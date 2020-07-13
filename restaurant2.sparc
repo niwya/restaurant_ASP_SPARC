@@ -93,36 +93,19 @@ holds(isattable(chair1t1, table1),0).
 holds(isattable(chair2t1, table1),0).
 holds(isattable(chair1t2, table2),0).
 holds(isattable(chair2t2, table2),0).
-%holds(isattable(chair3t2, table2),0).
-%holds(isattable(chair4t2, table2),0).
-%holds(isattable(chair1t3, table3),0).
-%holds(isattable(chair2t3, table3),0).
-%holds(isattable(chair3t3, table3),0).
-%holds(isattable(chair4t3, table3),0).
 %----------------------------------------------------------------------------------------%
-%% Paths linking nodes %%
+%% Paths linking nodes %% Simplified 2 tables version
 edge(a,b).
 edge(b,a).  edge(b,c).
 edge(c,b).  edge(c,d).
-edge(d,c).  edge(d,e).  edge(d,h).  edge(d,j).
+edge(d,c).  edge(d,e).  edge(d,h).
 edge(e,d).  edge(e,f).
-edge(f,e).  edge(f,g).
-edge(g,f).
-edge(h,d).  edge(h,i).
-edge(i,h).
-edge(j,d).  edge(j,k).  edge(j,o).
-edge(k,j).  edge(k,l).
-edge(l,k).  edge(l,n).  edge(l,m).
-edge(m,l).
-edge(n,l).
-edge(o,p).  edge(o,q).  edge(o,j).
-edge(p,o).
-edge(q,o).
-% No need to specify here bc already written but relation edge(x,y) is commutative
+edge(f,e).
+edge(h,d).
+% Commutativity of the 'edge' predicate is not clearly stated as rule but specified here
 %----------------------------------------------------------------------------------------%
 %% Locations of customers at initial step %%
 holds(iswaiting(c1),0).
-%-holds(iswaiting(c1),2).
 holds(iswaiting(c2),0).
 %----------------------------------------------------------------------------------------%
 %% Location of waiters+agent at initial step %%
@@ -240,9 +223,6 @@ areassociated(f,table1).
 %% Nodes f and h are associated to table2 %%
 areassociated(f,table2).
 areassociated(h,table2).
-%% Nodes h and k are associated to table3 %%
-areassociated(h,table3).
-areassociated(k,table3).
 %% Nodes a and b are associated to the counter %%
 areassociated(a,counter).
 areassociated(b,counter).
