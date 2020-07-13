@@ -15,6 +15,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 sorts 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% Step range %%
 #step = 0..n.
 %----------------------------------------------------------------------------------------%
@@ -39,11 +40,23 @@ sorts
 #node = {a,b,c,d,h,e,f}.
 #entity = #moving_entity + #furniture + #node.
 %----------------------------------------------------------------------------------------%
+%% To manage pick and drop actions %
+#object=#chair.
+#location=#table.
+%----------------------------------------------------------------------------------------%
 %% Fluents %%
 % INERTIAL FLUENTS : can be directly/indirectly changed by actions (subject to inertia axiom) %
-#inertial_fluent= isonchair(#customer(Cu),#chair(Ch)) + iswaiting(#customer(Cu)) + isattable(#chair(Ch),#table(T)) + 
-isfree(#customerfurniture(Fr)) + isinroom(#entity(E),#room(R)) + canbemovedback(#chair(Ch),#table(T)) + 
-haspaid(#customer(Cu)) + hasleft(#customer(Cu)) + currentlocation(#node(N)) + iswithagent(#customer(Cu)). 
+#inertial_fluent=
+                    isonchair(#customer(Cu),#chair(Ch))
+                    + iswaiting(#customer(Cu))
+                    + isattable(#chair(Ch),#table(T))
+                    + isfree(#customerfurniture(Fr)) 
+                    + isinroom(#entity(E),#room(R)) 
+                    + holding(#object(O)) 
+                    + haspaid(#customer(Cu)) 
+                    + hasleft(#customer(Cu)) 
+                    + currentlocation(#node(N)) 
+                    + iswithagent(#customer(Cu)). 
 
 % DEFINED FLUENTS : are defined in terms of other fluents %
 %#defined_fluent=. 
@@ -51,24 +64,25 @@ haspaid(#customer(Cu)) + hasleft(#customer(Cu)) + currentlocation(#node(N)) + is
 #fluent = #inertial_fluent.
 %----------------------------------------------------------------------------------------%
 %% Actions %%
-% The agent can seat clients, might be useful to change to seat him at table on whatever free chair %
 #actionseat = seat_customer(#customer(Cu), #chair(Ch)).
-% The agent has to pick up customers before seating them %
-#actionpick = pick_customer(#customer(Cu)).
-% The agent can move a chair to another table %
-#actionmove = move_chair(#chair(Ch), #table(T)).
-% The agent can bring the bill to a customer for him to pay %
+#actioncome = pick_customer(#customer(Cu)).
 #actionpay = bring_bill(#customer(Cu)).
-% The agent can go on predefinite locations %
 #actiongo = go_to(#node(N)).
+#actionpick = pick(#object(O),#location(L)).
+#actiondrop = drop(#object(O),#location(L)).
 
-
-% All possible actions for the agent %
-#action = #actionseat + #actionpick + #actionmove + #actionpay+ #actiongo.
+#action = 
+                    #actionseat % Agent assigns a customer to a chair
+                    + #actioncome % Tells a customer to come with agent
+                    + #actionpay % Agent gives bill to customer
+                    + #actiongo % Agent moves to a predefined node
+                    + #actionpick % Agent picks objet
+                    + #actiondrop. % Agent drops object
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %% Paths %%
 edge(#node,#node).
 areassociated(#node,#furniture).
@@ -84,22 +98,23 @@ occurs(#action, #step).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 rules
-%%% LAYOUT AND INITIAL SITUATION %%%
-%% Locations of tables %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% INITIAL SITUATION, RESTAURANT LAYOUT %%%
+%% Location of tables %%
 holds(isinroom(table1, mainroom),I).
 holds(isinroom(table2, mainroom),I).
 holds(isinroom(table3, mainroom),I).
 holds(isinroom(counter, kitchen),I).
 holds(isinroom(door, entrance),I).
 %----------------------------------------------------------------------------------------%
-%% Locations of chairs at tables %%
-% Gives the initial configuration, but chairs can be moved to other tables at step I
+%% Location of chairs at tables %%
 holds(isattable(chair1t1, table1),0).
 holds(isattable(chair2t1, table1),0).
 holds(isattable(chair1t2, table2),0).
 holds(isattable(chair2t2, table2),0).
 %----------------------------------------------------------------------------------------%
-%% Paths linking nodes %% Simplified 2 tables version
+%% Paths linking nodes %% 
 edge(a,b).
 edge(b,a).  edge(b,c).
 edge(c,b).  edge(c,d).
@@ -109,18 +124,16 @@ edge(f,e).
 edge(h,d).
 % Commutativity of the 'edge' predicate is not clearly stated as rule but specified here
 %----------------------------------------------------------------------------------------%
-%% Locations of customers at initial step %%
+%% Locations of customers %%
 holds(iswaiting(c1),0).
 holds(iswaiting(c2),0).
 %----------------------------------------------------------------------------------------%
-%% Location of waiters+agent at initial step %%
+%% Location of waiters+agent %%
 holds(isinroom(w1, mainroom),0).
 holds(currentlocation(e),0).
 %----------------------------------------------------------------------------------------%
 %----------------------------------------------------------------------------------------%
 %% Goal %% 
-% Current goal, to be changed as desired %
-goal(I):- holds(currentlocation(h),I).
 % Failure is not an option %
 success:- goal(I).
 :- not success.
@@ -129,91 +142,101 @@ occurs(A,I) | -occurs(A,I) :- not goal(I).
 something_happened(I):- occurs(A,I).
 :- goal(I), not goal(I-1), J<I, not something_happened(J).
 %----------------------------------------------------------------------------------------%
+% SET GOALS HERE %
+goal(I):- holds(currentlocation(h),I).
+%----------------------------------------------------------------------------------------%
+%----------------------------------------------------------------------------------------%
 %%% PERMANENT RULES %%%
 %% Inertia axiom %%
 holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 -holds(F, I+1):- #inertial_fluent(F), -holds(F, I), not holds(F, I+1).
-
+%----------------------------------------------------------------------------------------%
 %% Closed World Assumption for actions (if not known to occur, doesnt occur)  %%
 -occurs(A,I):- not occurs(A,I).
-
+%----------------------------------------------------------------------------------------%
 %% Non-simultaneity of actions (the agent can only do 1 thing at a said step) %%
 :- occurs(A1,I), occurs(A2,I), A1!=A2.
-
+%----------------------------------------------------------------------------------------%
 %% CWA for defined fluents %%
 %-holds(F,I):- #defined_fluent(F), not holds(F,I).
+%----------------------------------------------------------------------------------------%
 %----------------------------------------------------------------------------------------%
 %% CHAIRS %%
 %% A chair is free unless stated otherwise %%
 holds(isfree(Fr),I):- not -holds(isfree(Fr),I).
-
+%----------------------------------------------------------------------------------------%
 %% A chair is not free if a customer is sitting on it %%
 -holds(isfree(Fr),I):- #chair(Fr), holds(isonchair(Cu,Fr),I).
 holds(isfree(Fr),I+1):- #chair(Fr), holds(isonchair(Cu,Fr),I), occurs(seat_customer(Cu,Ch),I), Ch!=Fr.
-
+%----------------------------------------------------------------------------------------%
 %% Two customers cannot share the same chair at the same time %%
 -holds(isonchair(Cu2,Ch),I):- holds(isonchair(Cu1,Ch),I), Cu1!=Cu2.
-
+%----------------------------------------------------------------------------------------%
 %% A customer cannot be on two chairs at the same time %% 
 -holds(isonchair(Cu,Ch1),I):- holds(isonchair(Cu,Ch2),I), Ch1!=Ch2.
-
+%----------------------------------------------------------------------------------------%
 %% If customer Cu is not known to be on chair Ch at initial step, then he is not %%
 -holds(isonchair(Cu, Ch), 0):- not holds(isonchair(Cu, Ch), 0).
-
-%% A chair cannot be moved if it is not free %%
--occurs(move_chair(Ch,T),I):- -holds(isfree(Ch),I).
-
-%% Moving a chair to another table causes this chair to be associated with the new table %%
-holds(isattable(Ch,T),I+1):- occurs(move_chair(Ch,T),I).
--holds(isattable(Ch,T1),I+1):- occurs(move_chair(Ch,T2),I), T1!=T2.
-
-%% An inoccupied chair that has been displaced can be put back at its initial table %%
-holds(canbemovedback(Ch,T1),I):- holds(isfree(Ch),I), holds(isattable(Ch,T1),0), holds(isattable(Ch,T2),I), T2!=T1.
-
-%% A chair cannot be moved back if it is not free %%
--holds(canbemovedback(Ch,T1),I):- -holds(isfree(Ch),I).
-
-%% A chair cannot be moved back if it has not moved %% INCONSISTENT
-%-holds(canbemovedback(Ch,T1),I):- -occurs(move_chair(Ch,T2),J), J<I, J>0, holds(isattable(Ch,T1),0), T1!=T2. %%
+%----------------------------------------------------------------------------------------%
+%% An occupied chair cannot be picked up %%
+%-occurs(pick(Ch,T),I):- #chair(Ch), #table(T), -holds(isfree(Ch),I).
+%----------------------------------------------------------------------------------------%
+%% A chair can only be picked up from a node associated with the table it is at %%
+-occurs(pick(Ch,T),I):-  #chair(Ch), #table(T), -holds(currentlocation(N),I), areassociated(N,T), holds(isattable(Ch,T),I).
+%----------------------------------------------------------------------------------------%
+%% Picking a chair up causes said chair not to be at the table it was at anyomre %%
+-holds(isattable(Ch,T),I+1):- #chair(Ch), #table(T), occurs(pick(Ch,T),I).
+%----------------------------------------------------------------------------------------%
+%% A chair can be dropped at a table only if all chairs at table are full %%
+-occurs(drop(Ch,T),I):-  #chair(Ch), #table(T), holds(isfree(Ch),I), holds(isattable(Ch,T),I).
+%----------------------------------------------------------------------------------------%
+%% A chair can only be dropped at a table from a node associated with said table %%
+-occurs(drop(Ch,T),I):-  #chair(Ch), #table(T), -holds(currentlocation(N),I), areassociated(N,T).
+%----------------------------------------------------------------------------------------%
+%% Dropping a chair at a table causes said chair to be at said table at step I+1 %%
+holds(isattable(Ch,T),I+1):- #chair(Ch), #table(T), occurs(drop(Ch,T),I).
+%----------------------------------------------------------------------------------------%
 %----------------------------------------------------------------------------------------%
 %% TABLES %%
 %% A table is not free if one of its associated chairs is not free %%
 -holds(isfree(Fr),I):- #table(Fr), -holds(isfree(Ch),I), holds(isattable(Ch,Fr),I).
 %----------------------------------------------------------------------------------------%
+%----------------------------------------------------------------------------------------%
 %% ROOMS %%
 %% A customer who is waiting is in the entrance %%
 holds(isinroom(Cu,entrance),I):- holds(iswaiting(Cu),I).
-
+%----------------------------------------------------------------------------------------%
 %% A customer, if seated, is in the room his chair is in %%
 holds(isinroom(Cu,R),I):- holds(isonchair(Cu,Ch),I), holds(isinroom(Ch,R),I).
-
+%----------------------------------------------------------------------------------------%
 %% A chair in in the room its associated table is in %%
 holds(isinroom(Ch,R),I):- holds(isattable(Ch,T),I), holds(isinroom(T,R),I).
-
+%----------------------------------------------------------------------------------------%
 %% An entity cannot be on multiple rooms at the same time %% 
 -holds(isinroom(E,R1),I):- holds(isinroom(E,R2),I), R1!=R2.
-
+%----------------------------------------------------------------------------------------%
 %% If a customer is in the entrance at step I, is not anymore at step I+1 and has not been steated, then he has left %%
 holds(hasleft(Cu),I+1):- holds(iswaiting(Cu),I), -holds(iswaiting(Cu),I+1), -holds(isonchair(Cu,Ch),I).
-
+%----------------------------------------------------------------------------------------%
 %% If something or someone is not known to be in room R at step, then it or he is not %%
 -holds(isinroom(Cu,R),0):- not holds(isinroom(Cu,R),0). 
-
+%----------------------------------------------------------------------------------------%
 %% If a customer is not known to have left at step 0, then he has not %%
 -holds(hasleft(Cu),0):- not holds(hasleft(Cu),0).
-
+%----------------------------------------------------------------------------------------%
 %% A client has left if he is not in any room anymore %%
 holds(hasleft(Cu),I):- -holds(isinroom(Cu,R),I).
 %----------------------------------------------------------------------------------------%
-%% PATHS THE AGENT CAN FOLLOW %%
+%----------------------------------------------------------------------------------------%
+%% PATHS %%
 %% To go to a table/chair/customer, the agent must go to an associated node nearby (there can be multiple) %%
-
+%----------------------------------------------------------------------------------------%
 %% Two nodes that are not known to be associated to a piece of furniture are not %%
 -areassociated(N,F):- not areassociated(N,F).
-
+%----------------------------------------------------------------------------------------%
 %% A node associated with a piece of furniture is in the room the furniture is %%
 holds(isinroom(N,R),I):- #furniture(F), areassociated(N,F), holds(isinroom(F,R),I).
-
+%----------------------------------------------------------------------------------------%
 %% Node e is associated to door %%
 areassociated(e,door).
 %% Node f is associated to table1 %%
@@ -224,58 +247,62 @@ areassociated(h,table2).
 %% Nodes a and b are associated to the counter %%
 areassociated(a,counter).
 areassociated(b,counter).
-
+%----------------------------------------------------------------------------------------%
 %% If there seems not to be an edge between nodes, then there is not %%
 -edge(N1,N2):- not edge(N1,N2).
-
+%----------------------------------------------------------------------------------------%
 %% The agent can only be on one node at a time %%
 -holds(currentlocation(N2),I):- holds(currentlocation(N1),I), N2!=N1.
-
+%----------------------------------------------------------------------------------------%
 %% Action go_to triggers a change in currentlocation %%
 holds(currentlocation(N2),I+1):- occurs(go_to(N2),I), holds(currentlocation(N1),I), N2!=N1.
 -holds(currentlocation(N1),I+1):- occurs(go_to(N2),I), holds(currentlocation(N1),I), N2!=N1.
-
+%----------------------------------------------------------------------------------------%
 %% If there is no edge between nodes, then go_to cannot occur
 -occurs(go_to(N2),I):- -edge(N1,N2), holds(currentlocation(N1),I), N2!=N1.
+%----------------------------------------------------------------------------------------%
 %----------------------------------------------------------------------------------------%
 %% PICKING UP AND SEATING %%
 %% It is impossible to seat a customer on an occupied chair %%
 -occurs(seat_customer(Cu1,Ch),I):- holds(isonchair(Cu2,Ch),I), Cu2!=Cu1.
-
+%----------------------------------------------------------------------------------------%
 %% If customer is seated on a chair at step I, he will be on it at step I+1 %%
 holds(isonchair(Cu,Ch), I+1):- occurs(seat_customer(Cu,Ch), I).
-
+%----------------------------------------------------------------------------------------%
 %% It is impossible to seat a customer that is not with the agent %
 -occurs(seat_customer(Cu,Ch),I):- -holds(iswithagent(Cu),I).
-
+%----------------------------------------------------------------------------------------%
 %% It is impossible for the agent to seat a customer if the agent is not on a node associated with the table the chair the customer will be seated on is at %
 -occurs(seat_customer(Cu,Ch),I):- holds(currentlocation(N),I), holds(isattable(Ch,T),I), -areassociated(N,T).
-
+%----------------------------------------------------------------------------------------%
 %% A customer is not with the agent unless specified %%
 -holds(iswithagent(Cu),I):- not holds(iswithagent(Cu),I).
-
+%----------------------------------------------------------------------------------------%
 %% The action of picking up a customer causes said customer, if he is waiting, not to be anymore %%
 -holds(iswaiting(Cu),I+1):- occurs(pick_customer(Cu),I).
-
+%----------------------------------------------------------------------------------------%
 %% The action of picking up a customer causes said customer to be with agent instantly %%
 holds(iswithagent(Cu),I):- occurs(pick_customer(Cu),I).
-
+%----------------------------------------------------------------------------------------%
 %% It is impossible to pick up a customer that is not waiting %%
 -occurs(pick_customer(Cu),I):- -holds(iswaiting(Cu),I).
+%----------------------------------------------------------------------------------------%
 %----------------------------------------------------------------------------------------%
 %% PAYMENT %%
 %% Bringing the bill to a customer makes the haspaid fluent true for the following steps %%
 holds(haspaid(Cu),I+1):- occurs(bring_bill(Cu),I).
-
+%----------------------------------------------------------------------------------------%
 %% A customer has not paid, unless clearly stated %%
 -holds(haspaid(Cu),I):- not holds(haspaid(Cu),I).
-
+%----------------------------------------------------------------------------------------%
 %% The agent cannot bring the bill to a customer if he is not on a node associated with the table the client is at %%
 -occurs(bring_bill(Cu),I):- holds(currentlocation(N),I), holds(isattable(Ch,T),I), -areassociated(N,T).
-%----------------------------------------------------------------------------------------%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% NOTES %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Action seat_customer requires that the agents seeks for the customer at entrance (node e), then holds(iswithagent(Cu),I) becomes true and
 %% agent can go near a table where there is a free chair and seat the customer then holds(iswithagent(Cu),I) becomes false
-
+%----------------------------------------------------------------------------------------%
 %% Action bring_bill requires that the agent goes to a node associated with the table the client who wants to pay is at, then when he is we 
 %% have holds(haspaid(Cu),I) that becomes true - the client is then expected to leave but dunno when (will be observed)
