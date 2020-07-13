@@ -1,0 +1,44 @@
+// ALREADY DOCUMENTED ACTIONS: //
+# seat_customer(Cu,Ch) # 
+seat_customer(Cu,Ch) causes isonchair(Cu,Ch) if {currentlocation(N), areassociated(N,T), isattable(Ch,T), iswithagent(Cu)}
+impossible seat_customer(Cu,Ch) if hasleft(Cu)
+
+# pick_customer(Cu) #
+pick_customer(Cu) causes {-iswaiting(Cu), iswithagent(Cu)} if {currentlocation(e), iswaiting(Cu), -isonchair(Cu,Ch) forall Ch} ## not sure about the forall
+impossible pick_customer(Cu) if hasleft(Cu)
+
+// The following 2 actions help replacing the move_chair thing to allow the moving in between
+# pick_chair(Ch,T) #
+pick_chair(Ch,T) causes {holding(Ch), -isattable(Ch,T)}
+impossible pick_chair(Ch,T) if {-currentlocation(N), isattable(Ch,T), areassociated(N,T)}
+impossible pick_chair(Ch,T) if -isfree(Ch)
+# drop_chair(Ch,T) #
+drop_chair(Ch,T) causes isattable(Ch,T) if holding(Ch)
+impossible drop_chair(Ch,T) if {-currentlocation(N), areassociated(N,T)}
+
+# bring_bill(Cu) #
+bring_bill(Cu) causes haspaid(Cu) if {currentlocation(N), areassociated(N,T), isattable(Ch,T), isonchair(Cu,Ch)}
+impossible bring_bill(Cu) if hasleft(Cu)
+impossible bring_bill(Cu) if haspaid(Cu)
+
+# go_to(N) #
+go_to(N) causes currentlocation(N) if currentlocation(M)
+impossible if not edge(M,N)
+
+// OTHER ACTIONS TO BE ADDED //
+# take_order(Cu) #
+# pending_order not added yet
+take_order(Cu,O) causes pending_order(Cu,O) if {currentlocation(N), areassociated(N,T) isattable(Ch,T), isonchair(Cu,Ch)}
+impossible take_order(Cu,O) if hasleft(Cu)
+impossible take_order(Cu,O) if iswaiting(Cu)
+
+# transmit_order(Cu) #
+transmit_order(O) causes processing_order(O) if currentlocation(b) // Means that the orders have to be deposited in the kitchen, precisely at location b
+
+// adding these => adding objects
+# bring_consumable(T,Co) #
+# retrieve_consumable(Co) #
+# remove_dish(Cu,D) #
+# bring_order(Cu,O) #
+
+

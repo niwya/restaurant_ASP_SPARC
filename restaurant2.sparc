@@ -118,6 +118,7 @@ edge(n,l).
 edge(o,p).  edge(o,q).  edge(o,j).
 edge(p,o).
 edge(q,o).
+% No need to specify here bc already written but relation edge(x,y) is commutative
 %----------------------------------------------------------------------------------------%
 %% Locations of customers at initial step %%
 holds(iswaiting(c1),0).
