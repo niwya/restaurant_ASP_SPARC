@@ -1,7 +1,11 @@
 ## Program to read output from SPARC file and reorganize it to make it more readable ## 
 import subprocess, shlex
 
-command='java -jar sparc.jar restaurant2.sparc -A'
+
+command='java -jar sparc.jar restaurant2.sparc -A -n 1'
+#command='java -jar sparc.jar test_cannibals.sparc -A -n 1'
+#command='java -jar sparc.jar test_moving.sparc -A -n 1'
+
 args=shlex.split(command)
 
 output=subprocess.check_output(args)
@@ -27,4 +31,4 @@ for i in dct:
     for j in dct[i]:
         print(j)
 
-# Careful : only works well with a single answer set - add a feature to separate answer sets #
+# Careful : only works well with a single answer set - add a feature to manage multiple answer sets #

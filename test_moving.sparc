@@ -1,0 +1,71 @@
+% Number of steps %
+#const n=5.
+
+sorts 
+% Step range %
+#step = 0..n.
+#node = {a,b,c,d,h,e,f}.
+% The agent can go on predefinite locations %
+#actiongo = go_to(#node(N)).
+#action=#actiongo.
+
+#inertial_fluent=currentlocation(#node(N)).
+#fluent = #inertial_fluent.
+
+predicates
+%% Paths %%
+edge(#node,#node).
+
+%% Goal %%
+goal(#step).
+success().
+something_happened(#step).
+
+holds(#fluent, #step).
+occurs(#action, #step).
+
+rules
+edge(a,b).
+edge(b,a).  edge(b,c).
+edge(c,b).  edge(c,d).
+edge(d,c).  edge(d,e).  edge(d,h).
+edge(e,d).  edge(e,f).
+edge(f,e).
+edge(h,d).
+
+%% Goal %% 
+
+holds(currentlocation(e),0).
+goal(2):- holds(currentlocation(h),2).
+
+success:- goal(I).
+:- not success.
+occurs(A,I) | -occurs(A,I) :- not goal(I).
+
+something_happened(I):- occurs(A,I).
+:- goal(I), goal(I-1), J<I, something_happened(J).
+
+
+%% Inertia axiom %%
+holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
+-holds(F, I+1):- #inertial_fluent(F), -holds(F, I), not holds(F, I+1).
+
+%% Closed World Assumption for actions %%
+-occurs(A,I):- not occurs(A,I).
+
+%% Non-simultaneity of actions %%
+:- occurs(A1,I), occurs(A2,I), A1!=A2.
+
+%% PATHS THE AGENT CAN FOLLOW %%
+%% If there seems not to be an edge between nodes, then there is not %%
+-edge(N1,N2):- not edge(N1,N2).
+
+%% The agent can only be on one node at a time %%
+-holds(currentlocation(N2),I):- holds(currentlocation(N1),I), N2!=N1.
+
+%%% go_to triggers a change in currentlocation %%
+holds(currentlocation(N2),I+1):- occurs(go_to(N2),I), holds(currentlocation(N1),I), N2!=N1.
+-holds(currentlocation(N1),I+1):- occurs(go_to(N2),I), holds(currentlocation(N1),I), N2!=N1.
+
+%%% If there is no edge between nodes, then go_to cannot occur
+-occurs(go_to(N2),I):- -edge(N1,N2), holds(currentlocation(N1),I), N2!=N1.

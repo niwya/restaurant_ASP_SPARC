@@ -1,6 +1,7 @@
-%% A dynamic version of the simple restaurant setup %%
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% A dynamic version of the simple restaurant setup %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % Constants used %
 #const wnum=1. % Total number of waiters
 #const cnum=2. % Total number of customers
@@ -10,13 +11,14 @@
 
 % Number of steps %
 #const n=5.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 sorts 
-% Step range %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Step range %%
 #step = 0..n.
 %----------------------------------------------------------------------------------------%
 %% Population %%
-% Customers and waiters are referred to as a letter and a subscripted number %
 #waiter=[w][1..wnum].
 #customer=[c][1..cnum].
 #person = #customer + #waiter.
@@ -34,17 +36,18 @@ sorts
 %----------------------------------------------------------------------------------------%
 %% Moving population + paths %%
 #moving_entity= #person + {agent}.
-#node = {a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q}.
-#entity = #moving_entity + #furniture +#node.
+#node = {a,b,c,d,h,e,f}.
+#entity = #moving_entity + #furniture + #node.
 %----------------------------------------------------------------------------------------%
 %% Fluents %%
-% Can be directly/indirectly changed by actions (subject to inertia axiom) %
+% INERTIAL FLUENTS : can be directly/indirectly changed by actions (subject to inertia axiom) %
 #inertial_fluent= isonchair(#customer(Cu),#chair(Ch)) + iswaiting(#customer(Cu)) + isattable(#chair(Ch),#table(T)) + 
 isfree(#customerfurniture(Fr)) + isinroom(#entity(E),#room(R)) + canbemovedback(#chair(Ch),#table(T)) + 
 haspaid(#customer(Cu)) + hasleft(#customer(Cu)) + currentlocation(#node(N)) + iswithagent(#customer(Cu)). 
 
-% Are defined in terms of other fluents %
+% DEFINED FLUENTS : are defined in terms of other fluents %
 %#defined_fluent=. 
+
 #fluent = #inertial_fluent.
 %----------------------------------------------------------------------------------------%
 %% Actions %%
@@ -65,6 +68,7 @@ haspaid(#customer(Cu)) + hasleft(#customer(Cu)) + currentlocation(#node(N)) + is
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Paths %%
 edge(#node,#node).
 areassociated(#node,#furniture).
@@ -72,6 +76,7 @@ areassociated(#node,#furniture).
 %% Goal %%
 goal(#step).
 success().
+something_happened(#step).
 %----------------------------------------------------------------------------------------%
 %% Gestion of fluents and actions %%
 holds(#fluent, #step).
@@ -113,23 +118,16 @@ holds(isinroom(w1, mainroom),0).
 holds(currentlocation(e),0).
 %----------------------------------------------------------------------------------------%
 %----------------------------------------------------------------------------------------%
-%% Actions %%
-%occurs(move_chair(chair2t2,table1),1).
-%occurs(seat_customer(c2, chair2t2),2).
-%occurs(bring_bill(c2),3).
-occurs(pick_customer(c1),1).
-occurs(go_to(h),2).
-%----------------------------------------------------------------------------------------%
-%----------------------------------------------------------------------------------------%
 %% Goal %% 
 % Current goal, to be changed as desired %
-goal(I):- holds(currentlocation(c),I).
+goal(I):- holds(currentlocation(h),I).
 % Failure is not an option %
 success:- goal(I).
-%:- not success.
+:- not success.
+occurs(A,I) | -occurs(A,I) :- not goal(I).
 % Procrastinating is not an option %
-:- goal(I), not goal(I-1), J<I, not occurs(A,J).
-% NOTE : Failure is not an option rule renders the program inconsistent in the case success cannot be archieved. %
+something_happened(I):- occurs(A,I).
+:- goal(I), not goal(I-1), J<I, not something_happened(J).
 %----------------------------------------------------------------------------------------%
 %%% PERMANENT RULES %%%
 %% Inertia axiom %%
@@ -233,10 +231,12 @@ areassociated(b,counter).
 %% The agent can only be on one node at a time %%
 -holds(currentlocation(N2),I):- holds(currentlocation(N1),I), N2!=N1.
 
-%% The agent can only go from one node to another in 1 step if the two nodes are linked togethere by an edge %%
-holds(currentlocation(N2),I+1):- occurs(go_to(N2),I), holds(currentlocation(N1),I), edge(N1,N2).
+%% Action go_to triggers a change in currentlocation %%
+holds(currentlocation(N2),I+1):- occurs(go_to(N2),I), holds(currentlocation(N1),I), N2!=N1.
+-holds(currentlocation(N1),I+1):- occurs(go_to(N2),I), holds(currentlocation(N1),I), N2!=N1.
 
-{holds(currentlocation(N),I+1):occurs(go_to(N),I)}.
+%% If there is no edge between nodes, then go_to cannot occur
+-occurs(go_to(N2),I):- -edge(N1,N2), holds(currentlocation(N1),I), N2!=N1.
 %----------------------------------------------------------------------------------------%
 %% PICKING UP AND SEATING %%
 %% It is impossible to seat a customer on an occupied chair %%
@@ -259,6 +259,9 @@ holds(isonchair(Cu,Ch), I+1):- occurs(seat_customer(Cu,Ch), I).
 
 %% The action of picking up a customer causes said customer to be with agent instantly %%
 holds(iswithagent(Cu),I):- occurs(pick_customer(Cu),I).
+
+%% It is impossible to pick up a customer that is not waiting %%
+-occurs(pick_customer(Cu),I):- -holds(iswaiting(Cu),I).
 %----------------------------------------------------------------------------------------%
 %% PAYMENT %%
 %% Bringing the bill to a customer makes the haspaid fluent true for the following steps %%
