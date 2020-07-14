@@ -1,8 +1,9 @@
 ## Program to read output from SPARC file and reorganize it to make it more readable ## 
-import subprocess, shlex
+import subprocess, shlex, re
 
 
-command='java -jar sparc.jar restaurant2.sparc -A -n 1'
+#command='java -jar sparc.jar restaurant2.sparc -A -n 1'
+command='java -jar sparc.jar restaurant2.sparc -A -n 2'
 #command='java -jar sparc.jar test.sparc -A -n 1'
 
 args=shlex.split(command)

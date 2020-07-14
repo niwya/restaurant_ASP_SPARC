@@ -19,6 +19,9 @@ sorts
 %% Step range %%
 #step = 0..n.
 %----------------------------------------------------------------------------------------%
+%% Boolean type %%
+#boolean={true, false}.
+%----------------------------------------------------------------------------------------%
 %% Population %%
 #waiter=[w][1..wnum].
 #customer=[c][1..cnum].
@@ -92,6 +95,9 @@ something_happened(#step).
 %% Gestion of fluents and actions %%
 holds(#fluent, #step).
 occurs(#action, #step).
+%----------------------------------------------------------------------------------------%
+%% Gestion of observations %%
+observed(#fluent, #boolean, #step).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 rules
@@ -129,7 +135,7 @@ holds(isonchair(c2,chair2t2),0).
 %----------------------------------------------------------------------------------------%
 %% Location of waiters and agent %%
 holds(isinroom(w1, mainroom),0).
-holds(currentlocation(f),0).
+holds(currentlocation(e),0).
 %----------------------------------------------------------------------------------------%
 %%% GOAL GESTION %%% 
 %% Failure is not an option %%
@@ -338,7 +344,8 @@ holds(haspaid(Cu),I+1):- occurs(bring_bill(Cu),I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% NOTES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% 1. A client may be brought a bill more than once during its stay, might happen IRL   %%
+%% 1. As things are, a client may be brought a bill more than once during its stay. As  %%
+%% it is coherent that it happens IRL, no rule has been added to block that.            %%
 %% It is possible to avoid that by adding the rule:                                     %%
 %% -occurs(bring_bill(Cu),I):- occurs(bring_bill(Cu),J), J<I.                           %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
