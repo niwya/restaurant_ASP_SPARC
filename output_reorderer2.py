@@ -5,14 +5,14 @@
 
 import subprocess, shlex, re
 curly_brack='\{(.*?)\}'
-command='java -jar sparc.jar restaurant2.sparc -A -n 2'
+command='java -jar sparc.jar restaurant2.sparc -A -n '
+command+=str(input('How many answer sets?\n'))
 
 ## Running the command line                                   ##
-#args=shlex.split(command)
+args=shlex.split(command)
 ## Retrieving the output                                       ##
-#output=subprocess.check_output(args)
-#output=str(output)
-output='{holds(isattable(chair1t2,table2),4), holds(isattable(chair1t2,table2),5)} \n\r\n {holds(isinroom(c1,entrance),3), holds(iswaiting(c1),4), holds(currentlocation(f),5)}'
+output=subprocess.check_output(args)
+output=str(output)
 ## Splitting the output according to the different answer sets ##
 ## Each sub-list corresponds to one answer set                 ##
 output_list=re.findall(curly_brack,output)
@@ -33,7 +33,8 @@ keywords=input('Keywords, separated by a comma:\n')
 keywords=keywords.split(',')
 print("#############################")
 for i in range(len(output_list3)):
-    print("Answer set number %d" % i + ":")
+    ind=i+1
+    print("Answer set number %d" % ind + ":")
     print("#############################\n")
     for k in keywords:
         print("Keyword "  + k +":")
