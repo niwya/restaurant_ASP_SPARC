@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% A dynamic version of the simple restaurant setup %%
+%%%%%%%%%%%%%%%%%%%% A dynamic version of the simple restaurant setup %%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Constants used %
@@ -8,7 +8,7 @@
 #const tnum=2. % Total number of tables
 #const maxcap1=2.
 %#const maxcap2=4.
-
+%----------------------------------------------------------------------------------------%
 % Number of steps %
 #const n=5.
 
@@ -28,21 +28,23 @@ sorts
 #room = {mainroom, kitchen, entrance}.
 #table = [table][1..tnum].
 #chair = [chair][1..maxcap1][t][1..tnum].
-#customerfurniture = #table + #chair.
-#otherfurniture = {counter, door}.
-#furniture = #customerfurniture + #otherfurniture.
+
+#customerfurniture = #table + #chair.               %% Furniture that can be free/occupied
+#otherfurniture = {counter, door}.                  %% "Inert" funiture 
+#furniture = #customerfurniture + #otherfurniture.  %% All types of furniture
 %----------------------------------------------------------------------------------------%
 %% Moving population + paths %%
-#moving_entity= #person + {agent}.
+#moving_entity= #person.
 #node = {a,b,c,d,h,e,f}.
 #entity = #moving_entity + #furniture + #node.
 %----------------------------------------------------------------------------------------%
 %% To manage pick and drop actions %
 #object=#chair.
 #location=#table.
+% Here will be added jug/basket objects, as well as plates etc. %
 %----------------------------------------------------------------------------------------%
 %% Fluents %%
-% INERTIAL FLUENTS : can be directly/indirectly changed by actions (subject to inertia axiom) %
+% INERTIAL FLUENTS : can be directly/indirectly changed by actions %
 #inertial_fluent=
                     isonchair(#customer(Cu),#chair(Ch))
                     + iswaiting(#customer(Cu))
@@ -56,6 +58,7 @@ sorts
                     + iswithagent(#customer(Cu)). 
 
 #fluent = #inertial_fluent.
+% There are no defined_fluents for now - if there were needed, add a CWA for them %
 %----------------------------------------------------------------------------------------%
 %% Actions %%
 #actionseat = seat_customer(#customer(Cu), #chair(Ch)).
@@ -66,12 +69,12 @@ sorts
 #actiondrop = drop(#object(O),#location(L)).
 
 #action = 
-                    #actionseat % Agent assigns a customer to a chair
-                    + #actioncome % Tells a customer to come with agent
-                    + #actionpay % Agent gives bill to customer
-                    + #actiongo % Agent moves to a predefined node
-                    + #actionpick % Agent picks objet
-                    + #actiondrop. % Agent drops object
+                    #actionseat                      % Agent assigns a customer to a chair
+                    + #actioncome                    % Tells a customer to come with agent
+                    + #actionpay                     % Agent gives bill to customer
+                    + #actiongo                      % Agent moves to a predefined node
+                    + #actionpick                    % Agent picks objet
+                    + #actiondrop.                   % Agent drops object
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 predicates
@@ -94,20 +97,16 @@ occurs(#action, #step).
 rules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%% INITIAL SITUATION, RESTAURANT LAYOUT %%%
+%%% INITIAL SITUATION %%%
 %% Location of tables %%
+% Tables cannot be moved %
 holds(isinroom(table1, mainroom),I).
 holds(isinroom(table2, mainroom),I).
 holds(isinroom(counter, kitchen),I).
 holds(isinroom(door, entrance),I).
 %----------------------------------------------------------------------------------------%
-%% Location of chairs at tables %%
-holds(isattable(chair1t1, table1),0).
-holds(isattable(chair2t1, table1),0).
-holds(isattable(chair1t2, table2),0).
-holds(isattable(chair2t2, table2),0).
-%----------------------------------------------------------------------------------------%
 %% Paths linking nodes %% 
+% There is no other paths than the predefined one, paths may be blocked %
 edge(a,b).
 edge(b,a).  edge(b,c).
 edge(c,b).  edge(c,d).
@@ -115,33 +114,44 @@ edge(d,c).  edge(d,e).  edge(d,h).
 edge(e,d).  edge(e,f).
 edge(f,e).
 edge(h,d).
-% Commutativity of the 'edge' predicate is not clearly stated as rule but specified here
+% Commutativity of the 'edge' predicate is not clearly stated as rule but no need %
+%----------------------------------------------------------------------------------------%
+%% Location of chairs at tables %%
+% Chairs may be moved between tables %
+holds(isattable(chair1t1, table1),0).
+holds(isattable(chair2t1, table1),0).
+holds(isattable(chair1t2, table2),0).
+holds(isattable(chair2t2, table2),0).
 %----------------------------------------------------------------------------------------%
 %% Locations of customers %%
 holds(iswaiting(c1),0).
+holds(isonchair(c2,chair2t2),0).
 %----------------------------------------------------------------------------------------%
-%% Location of waiters+agent %%
+%% Location of waiters and agent %%
 holds(isinroom(w1, mainroom),0).
 holds(currentlocation(f),0).
 %----------------------------------------------------------------------------------------%
-%----------------------------------------------------------------------------------------%
-%% Goal %% 
-% Failure is not an option %
+%%% GOAL GESTION %%% 
+%% Failure is not an option %%
 success:- goal(I).
 :- not success.
 occurs(A,I) | -occurs(A,I) :- not goal(I).
-% Procrastinating is not an option %
+%% Procrastinating is not an option %%
 something_happened(I):- occurs(A,I).
 :- goal(I), not goal(I-1), J<I, not something_happened(J).
+
 %----------------------------------------------------------------------------------------%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% SET GOALS HERE %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% GOALS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Tested goals %%
 %goal(I):- holds(isattable(chair1t1,table2),I). %% OK when h/table2 association commented
-%goal(I):- holds(currentlocation(f),I). %% OK
+%goal(I):- holds(currentlocation(e),I). %% OK
 %goal(I):- holds(isonchair(c1,chair2t2),I). %% OK
+%% Untested goals %%
+goal(I):- holds(haspaid(c2),I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------------------------------------------------------------------%
-%----------------------------------------------------------------------------------------%
+
 %%% PERMANENT RULES %%%
 %% Inertia axiom %%
 holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
@@ -153,6 +163,8 @@ holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 %% Non-simultaneity of actions (the agent can only do 1 thing at a said step) %%
 :- occurs(A1,I), occurs(A2,I), A1!=A2.
 %----------------------------------------------------------------------------------------%
+%% Axiome de la flemme (always try to minimize the number of actions to perform) %%
+
 %----------------------------------------------------------------------------------------%
 %% CHAIRS %%
 %% A chair is free unless stated otherwise %%
@@ -258,7 +270,7 @@ areassociated(e,door).
 areassociated(f,table1).
 %% Nodes f and h are associated to table2 %%
 areassociated(f,table2).
-areassociated(h,table2).
+%areassociated(h,table2).
 %% Nodes a and b are associated to the counter %%
 areassociated(a,counter).
 areassociated(b,counter).
@@ -318,7 +330,15 @@ holds(haspaid(Cu),I+1):- occurs(bring_bill(Cu),I).
 %----------------------------------------------------------------------------------------%
 %% The agent cannot bring the bill to a customer if he is not on a node associated with the table the client is at %%
 -occurs(bring_bill(Cu),I):- holds(currentlocation(N),I), holds(isattable(Ch,T),I), -areassociated(N,T).
+%----------------------------------------------------------------------------------------%
+%% The agent cannot bring bill to a customer that is waiting %%
+-occurs(bring_bill(Cu),I):- holds(iswaiting(Cu),I).
+%----------------------------------------------------------------------------------------%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% NOTES %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% NOTES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 1. A client may be brought a bill more than once during its stay, might happen IRL   %%
+%% It is possible to avoid that by adding the rule:                                     %%
+%% -occurs(bring_bill(Cu),I):- occurs(bring_bill(Cu),J), J<I.                           %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
