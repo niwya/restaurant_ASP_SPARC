@@ -7,7 +7,6 @@ impossible seat_customer(Cu,Ch) if hasleft(Cu)
 pick_customer(Cu) causes {-iswaiting(Cu), iswithagent(Cu)} if {currentlocation(e), iswaiting(Cu), -isonchair(Cu,Ch) forall Ch} ## not sure about the forall
 impossible pick_customer(Cu) if hasleft(Cu)
 
-// The following 2 actions help replacing the move_chair thing to allow the moving in between
 # pick_chair(Ch,T) #
 pick_chair(Ch,T) causes {holding(Ch), -isattable(Ch,T)}
 impossible pick_chair(Ch,T) if {-currentlocation(N), isattable(Ch,T), areassociated(N,T)}

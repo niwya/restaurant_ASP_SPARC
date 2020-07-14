@@ -90,15 +90,24 @@ holds(currentlocation(N2),I+1):- occurs(go_to(N2),I), holds(currentlocation(N1),
 %%% If there is no edge between nodes, then go_to cannot occur
 -occurs(go_to(N2),I):- -edge(N1,N2), holds(currentlocation(N1),I), N2!=N1.
 
+%% Node f is associated to table1 %%
+areassociated(f,table1).
+%% Nodes f and h are associated to table2 %%
+areassociated(f,table2).
+%----------------------------------------------------------------------------------------%
+%% Two nodes that are not known to be associated to a piece of furniture are not %%
+-areassociated(N,F):- not areassociated(N,F).
+%----------------------------------------------------------------------------------------%
 
-
+%----------------------------------------------------------------------------------------%
+%% A chair cannot be at two tables at the same time %%
+-holds(isattable(Ch,T2),I):- holds(isattable(Ch,T1),I), T2!=T1.
 %----------------------------------------------------------------------------------------%
 %% An occupied chair cannot be picked up %%
 -occurs(pick(Ch,T),I):- #chair(Ch), #table(T), -holds(isfree(Ch),I).
 %----------------------------------------------------------------------------------------%
 %% A chair can only be picked up from a node associated with the table it is at %%
--occurs(pick(Ch,T),I):-  #chair(Ch), #table(T), holds(currentlocation(N),I), -areassociated(N,T).
--occurs(pick(Ch,T),I):- #chair(Ch), #table(T), -holds(isattable(Ch,T),I).
+-occurs(pick(Ch,T),I):-  #chair(Ch), #table(T), -holds(currentlocation(N),I), areassociated(N,T).
 %----------------------------------------------------------------------------------------%
 %% Picking a chair up causes said chair not to be at the table it was at anyomre %%
 -holds(isattable(Ch,T),I+1):- #chair(Ch), #table(T), occurs(pick(Ch,T),I).
@@ -112,12 +121,18 @@ holds(currentlocation(N2),I+1):- occurs(go_to(N2),I), holds(currentlocation(N1),
 %% Dropping a chair at a table causes said chair to be at said table at step I+1 %%
 holds(isattable(Ch,T),I+1):- #chair(Ch), #table(T), occurs(drop(Ch,T),I).
 %----------------------------------------------------------------------------------------%
-
-% A chair can only be dropped if it has been picked up %
+%% A chair can only be dropped if it has been picked up %%
 -occurs(drop(Ch,T),I):- #chair(Ch), #table(T), -holds(holding(Ch),I).
-% Picking up a chair causes the robot to be holding the chair %
+%----------------------------------------------------------------------------------------%
+%% Picking up a chair causes the robot to be holding the chair %%
 holds(holding(O),I+1):- occurs(pick(O,L),I).
-% An object not known to be held is not %
+%----------------------------------------------------------------------------------------%
+%% An object not known to be held is not %%
 -holds(holding(O),I):- not holds(holding(O),I).
-% Dropping an object causes it not to be held anymore %
+%----------------------------------------------------------------------------------------%
+%% Dropping an object causes it not to be held anymore %%
 -holds(holding(O),I+1):- occurs(drop(O,L),I).
+%----------------------------------------------------------------------------------------%
+%% A chair can only be picked up at the table it is at %%
+-occurs(pick(Ch,T),I):- #chair(Ch), #table(T), -holds(isattable(Ch,T),I).
+%----------------------------------------------------------------------------------------%
