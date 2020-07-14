@@ -122,7 +122,7 @@ holds(iswaiting(c1),0).
 %----------------------------------------------------------------------------------------%
 %% Location of waiters+agent %%
 holds(isinroom(w1, mainroom),0).
-holds(currentlocation(e),0).
+holds(currentlocation(f),0).
 %----------------------------------------------------------------------------------------%
 %----------------------------------------------------------------------------------------%
 %% Goal %% 
@@ -136,8 +136,9 @@ something_happened(I):- occurs(A,I).
 %----------------------------------------------------------------------------------------%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SET GOALS HERE %
-goal(I):- holds(isattable(chair1t1,table2),I). %% this goal does not work
-%goal(I):- holds(currentlocation(f),I). %% perfectly working goal
+%goal(I):- holds(isattable(chair1t1,table2),I). %% OK when h/table2 association commented
+%goal(I):- holds(currentlocation(f),I). %% OK
+%goal(I):- holds(isonchair(c1,chair2t2),I). %% OK
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------------------------------------------------------------------%
 %----------------------------------------------------------------------------------------%
@@ -257,7 +258,7 @@ areassociated(e,door).
 areassociated(f,table1).
 %% Nodes f and h are associated to table2 %%
 areassociated(f,table2).
-%areassociated(h,table2). %% RENDERS THE PROGRAM INCONSISTENT
+areassociated(h,table2).
 %% Nodes a and b are associated to the counter %%
 areassociated(a,counter).
 areassociated(b,counter).
@@ -274,6 +275,9 @@ holds(currentlocation(N2),I+1):- occurs(go_to(N2),I), holds(currentlocation(N1),
 %----------------------------------------------------------------------------------------%
 %% If there is no edge between nodes, then go_to cannot occur
 -occurs(go_to(N2),I):- -edge(N1,N2), holds(currentlocation(N1),I), N2!=N1.
+%----------------------------------------------------------------------------------------%
+%% The agent cannot go_to a location he is already at %%
+-occurs(go_to(N),I):- holds(currentlocation(N),I).
 %----------------------------------------------------------------------------------------%
 %----------------------------------------------------------------------------------------%
 %% PICKING UP AND SEATING %%
@@ -300,6 +304,9 @@ holds(iswithagent(Cu),I):- occurs(pick_customer(Cu),I).
 %----------------------------------------------------------------------------------------%
 %% It is impossible to pick up a customer that is not waiting %%
 -occurs(pick_customer(Cu),I):- -holds(iswaiting(Cu),I).
+%----------------------------------------------------------------------------------------%
+%% It is impossible to pick up a customer from another location than node e %%
+-occurs(pick_customer(Cu),I):- -holds(currentlocation(e),I).
 %----------------------------------------------------------------------------------------%
 %----------------------------------------------------------------------------------------%
 %% PAYMENT %%
