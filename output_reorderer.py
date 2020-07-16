@@ -3,7 +3,6 @@ import subprocess, shlex, re
 
 
 #command='java -jar sparc.jar restaurant2.sparc -A -n 1'
-command='java -jar sparc.jar restaurant2.sparc -A -n 2'
 #command='java -jar sparc.jar test.sparc -A -n 1'
 
 args=shlex.split(command)

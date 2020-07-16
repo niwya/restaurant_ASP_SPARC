@@ -58,7 +58,9 @@ sorts
                     + haspaid(#customer(Cu)) 
                     + hasleft(#customer(Cu)) 
                     + currentlocation(#node(N)) 
-                    + iswithagent(#customer(Cu)). 
+                    + iswithagent(#customer(Cu))
+% OBSERVATION-RELATED FLUENTS :
+                    + bill_wave(#customer(Cu)).                % "Bring me the bill" sign
 
 #fluent = #inertial_fluent.
 % There are no defined_fluents for now - if there were needed, add a CWA for them %
@@ -66,7 +68,7 @@ sorts
 %% Actions %%
 #actionseat = seat_customer(#customer(Cu), #chair(Ch)).
 #actioncome = pick_customer(#customer(Cu)).
-#actionpay = bring_bill(#customer(Cu)).
+#actionpay = give_bill(#customer(Cu)).
 #actiongo = go_to(#node(N)).
 #actionpick = pick(#object(O),#location(L)).
 #actiondrop = drop(#object(O),#location(L)).
@@ -158,6 +160,13 @@ goal(I):- holds(haspaid(c2),I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------------------------------------------------------------------%
 
+%----------------------------------------------------------------------------------------%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% OBSERVATIONS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+observed(bill_wave(c1), true, 3).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%----------------------------------------------------------------------------------------%
+
 %%% PERMANENT RULES %%%
 %% Inertia axiom %%
 holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
@@ -169,8 +178,15 @@ holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 %% Non-simultaneity of actions (the agent can only do 1 thing at a said step) %%
 :- occurs(A1,I), occurs(A2,I), A1!=A2.
 %----------------------------------------------------------------------------------------%
+%% Reality check %%
+:- observed(F,true,I), -holds(F,I).
+:- observed(F,false,I), holds(F,I).
+%----------------------------------------------------------------------------------------%
+%% Full Awareness Axiom:
+holds(F,0) | -holds(F,0) :- #fluent(F).
+%----------------------------------------------------------------------------------------%
 %% Axiome de la flemme (always try to minimize the number of actions to perform) %%
-
+% #minimize {occurs(A,I):action(A):step(I)}. DOES NOT WORK AS IS
 %----------------------------------------------------------------------------------------%
 %% CHAIRS %%
 %% A chair is free unless stated otherwise %%
@@ -329,23 +345,24 @@ holds(iswithagent(Cu),I):- occurs(pick_customer(Cu),I).
 %----------------------------------------------------------------------------------------%
 %% PAYMENT %%
 %% Bringing the bill to a customer makes the haspaid fluent true for the following steps %%
-holds(haspaid(Cu),I+1):- occurs(bring_bill(Cu),I).
+holds(haspaid(Cu),I+1):- occurs(give_bill(Cu),I).
 %----------------------------------------------------------------------------------------%
 %% A customer has not paid, unless clearly stated %%
 -holds(haspaid(Cu),I):- not holds(haspaid(Cu),I).
 %----------------------------------------------------------------------------------------%
 %% The agent cannot bring the bill to a customer if he is not on a node associated with the table the client is at %%
--occurs(bring_bill(Cu),I):- holds(currentlocation(N),I), holds(isattable(Ch,T),I), -areassociated(N,T).
+-occurs(give_bill(Cu),I):- holds(currentlocation(N),I), holds(isattable(Ch,T),I), -areassociated(N,T).
 %----------------------------------------------------------------------------------------%
 %% The agent cannot bring bill to a customer that is waiting %%
--occurs(bring_bill(Cu),I):- holds(iswaiting(Cu),I).
+-occurs(give_bill(Cu),I):- holds(iswaiting(Cu),I).
 %----------------------------------------------------------------------------------------%
-
+%% The agent cannot give the bill to someone who has left %%
+-occurs(give_bill(Cu),I):- holds(hasleft(Cu),I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% NOTES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 1. As things are, a client may be brought a bill more than once during its stay. As  %%
 %% it is coherent that it happens IRL, no rule has been added to block that.            %%
 %% It is possible to avoid that by adding the rule:                                     %%
-%% -occurs(bring_bill(Cu),I):- occurs(bring_bill(Cu),J), J<I.                           %%
+%% -occurs(give_bill(Cu),I):- occurs(give_bill(Cu),J), J<I.                           %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

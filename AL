@@ -15,10 +15,11 @@ impossible pick_chair(Ch,T) if -isfree(Ch)
 drop_chair(Ch,T) causes isattable(Ch,T) if holding(Ch)
 impossible drop_chair(Ch,T) if {-currentlocation(N), areassociated(N,T)}
 
-# bring_bill(Cu) #
-bring_bill(Cu) causes haspaid(Cu) if {currentlocation(N), areassociated(N,T), isattable(Ch,T), isonchair(Cu,Ch)}
-impossible bring_bill(Cu) if hasleft(Cu)
-impossible bring_bill(Cu) if haspaid(Cu)
+# give_bill(Cu) #
+give_bill(Cu) causes haspaid(Cu) if {currentlocation(N), areassociated(N,T), isattable(Ch,T), isonchair(Cu,Ch)}
+impossible give_bill(Cu) if hasleft(Cu)
+impossible give_bill(Cu) if haspaid(Cu) % not sure, can order 2x
++ bill_wave triggers the goal give_bill
 
 # go_to(N) #
 go_to(N) causes currentlocation(N) if currentlocation(M)
