@@ -1,13 +1,8 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%% A dynamic version of the simple restaurant setup %%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 % Constants used %
 #const wnum=1. % Total number of waiters
 #const cnum=2. % Total number of customers
 #const tnum=2. % Total number of tables
-#const maxcap1=2.
-%#const maxcap2=4.
+#const maxcap=2. % Maximum capacity of tables
 %----------------------------------------------------------------------------------------%
 % Number of steps %
 #const n=5.
@@ -19,32 +14,34 @@ sorts
 %% Step range %%
 #step = 0..n.
 %----------------------------------------------------------------------------------------%
-%% Boolean type %%
-#boolean={true, false}.
-%----------------------------------------------------------------------------------------%
 %% Population %%
 #waiter=[w][1..wnum].
 #customer=[c][1..cnum].
 #person = #customer + #waiter.
+#employee = #waiter + {agent}.
+#moving_entity= #person + {agent}.
 %----------------------------------------------------------------------------------------%
 %% Environment %%
 #room = {mainroom, kitchen, entrance}.
 #table = [table][1..tnum].
-#chair = [chair][1..maxcap1][t][1..tnum].
+#chair = [chair][1..maxcap][t][1..tnum].
 
 #customerfurniture = #table + #chair.               %% Furniture that can be free/occupied
 #otherfurniture = {counter, door}.                  %% "Inert" funiture 
 #furniture = #customerfurniture + #otherfurniture.  %% All types of furniture
 %----------------------------------------------------------------------------------------%
-%% Moving population + paths %%
-#moving_entity= #person.
+%% Paths %%
 #node = {a,b,c,d,h,e,f}.
+%----------------------------------------------------------------------------------------%
+%% Entities %%
 #entity = #moving_entity + #furniture + #node.
 %----------------------------------------------------------------------------------------%
-%% To manage pick and drop actions %
+%% To manage pick and drop actions %%
 #object=#chair.
 #location=#table.
-% Here will be added jug/basket objects, as well as plates etc. %
+%----------------------------------------------------------------------------------------%
+%% For observations %%
+#boolean = {true,false}.
 %----------------------------------------------------------------------------------------%
 %% Fluents %%
 % INERTIAL FLUENTS : can be directly/indirectly changed by actions %
@@ -57,20 +54,18 @@ sorts
                     + holding(#object(O)) 
                     + haspaid(#customer(Cu)) 
                     + hasleft(#customer(Cu)) 
-                    + currentlocation(#node(N)) 
+                    + currentlocation(#employee(E),#node(N)) 
                     + iswithagent(#customer(Cu))
 % OBSERVATION-RELATED FLUENTS :
                     + bill_wave(#customer(Cu))                  % "Bring me the bill" sign
                     + wants_bill(#customer(Cu)).
-
 #fluent = #inertial_fluent.
-% There are no defined_fluents for now - if there were needed, add a CWA for them %
 %----------------------------------------------------------------------------------------%
 %% Actions %%
 #actionseat = seat_customer(#customer(Cu), #chair(Ch)).
 #actioncome = pick_customer(#customer(Cu)).
 #actionpay = give_bill(#customer(Cu)).
-#actiongo = go_to(#node(N)).
+#actiongo = go_to(#employee(E),#node(N)).
 #actionpick = pick(#object(O),#location(L)).
 #actiondrop = drop(#object(O),#location(L)).
 
@@ -106,7 +101,7 @@ observed(#fluent, #boolean, #step).
 rules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%% INITIAL SITUATION %%%
+%%  %%
 %% Location of tables %%
 % Tables cannot be moved %
 holds(isinroom(table1, mainroom),I).
@@ -137,10 +132,11 @@ holds(iswaiting(c1),0).
 holds(isonchair(c2,chair2t2),0).
 %----------------------------------------------------------------------------------------%
 %% Location of waiters and agent %%
-holds(isinroom(w1, mainroom),0).
-holds(currentlocation(e),0).
+holds(currentlocation(agent,e),0). 
+holds(currentlocation(w1,a),0).
 %----------------------------------------------------------------------------------------%
-%%% GOAL GESTION %%% 
+
+%% GOAL GESTION %%
 %% Failure is not an option %%
 success:- goal(I).
 :- not success.
@@ -152,23 +148,18 @@ something_happened(I):- occurs(A,I).
 %----------------------------------------------------------------------------------------%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% GOALS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Tested goals %%
-%goal(I):- holds(isattable(chair1t1,table2),I). %% OK when h/table2 association commented
-%goal(I):- holds(currentlocation(e),I). %% OK
-%goal(I):- holds(isonchair(c1,chair2t2),I). %% OK
-%% Untested goals %%
-goal(I):- holds(haspaid(c2),I).
+%goal(I):- holds(haspaid(Cu),I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------------------------------------------------------------------%
 
 %----------------------------------------------------------------------------------------%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% OBSERVATIONS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-observed(bill_wave(c1), true, 3).
+%observed(bill_wave(c1), true, 3).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------------------------------------------------------------------%
 
-%%% PERMANENT RULES %%%
+%% PERMANENT RULES %%
 %% Inertia axiom %%
 holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 -holds(F, I+1):- #inertial_fluent(F), -holds(F, I), not holds(F, I+1).
@@ -183,12 +174,10 @@ holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 :- observed(F,true,I), -holds(F,I).
 :- observed(F,false,I), holds(F,I).
 %----------------------------------------------------------------------------------------%
-%% Full Awareness Axiom:
+%% Full Awareness Axiom %%
 holds(F,0) | -holds(F,0) :- #fluent(F).
 %----------------------------------------------------------------------------------------%
-%% Axiome de la flemme (always try to minimize the number of actions to perform) %%
-% #minimize {occurs(A,I):action(A):step(I)}. DOES NOT WORK AS IS
-%----------------------------------------------------------------------------------------%
+
 %% CHAIRS %%
 %% A chair is free unless stated otherwise %%
 holds(isfree(Fr),I):- not -holds(isfree(Fr),I).
@@ -209,48 +198,12 @@ holds(isfree(Fr),I+1):- #chair(Fr), holds(isonchair(Cu,Fr),I), occurs(seat_custo
 %% If customer Cu is not known to be on chair Ch at initial step, then he is not %%
 -holds(isonchair(Cu, Ch), 0):- not holds(isonchair(Cu, Ch), 0).
 %----------------------------------------------------------------------------------------%
-%% An occupied chair cannot be picked up %%
--occurs(pick(Ch,T),I):- #chair(Ch), #table(T), -holds(isfree(Ch),I).
-%----------------------------------------------------------------------------------------%
-%% A chair that is being held is not free %%
--holds(isfree(Ch),I):- #chair(Ch), holds(holding(Ch),I).
-%----------------------------------------------------------------------------------------%
-%% A chair can only be picked up from a node associated with the table it is at %%
--occurs(pick(Ch,T),I):-  #chair(Ch), #table(T), -holds(currentlocation(N),I), areassociated(N,T).
-%----------------------------------------------------------------------------------------%
-%% Picking a chair up causes said chair not to be at the table it was at anymore %%
--holds(isattable(Ch,T),I+1):- #chair(Ch), #table(T), occurs(pick(Ch,T),I).
-%----------------------------------------------------------------------------------------%
-%% A chair can be dropped at a table only if all chairs at table are full %% COMMENTED
-%-occurs(drop(Ch,T),I):-  #chair(Ch), #table(T), holds(isfree(Ch),I), holds(isattable(Ch,T),I).
-%----------------------------------------------------------------------------------------%
-%% A chair can only be dropped at a table from a node associated with said table %%
--occurs(drop(Ch,T),I):-  #chair(Ch), #table(T), -holds(currentlocation(N),I), areassociated(N,T).
-%----------------------------------------------------------------------------------------%
-%% Dropping a chair at a table causes said chair to be at said table at step I+1 %%
-holds(isattable(Ch,T),I+1):- #chair(Ch), #table(T), occurs(drop(Ch,T),I).
-%----------------------------------------------------------------------------------------%
-%% A chair can only be dropped if it has been picked up %%
--occurs(drop(Ch,T),I):- #chair(Ch), #table(T), -holds(holding(Ch),I).
-%----------------------------------------------------------------------------------------%
-%% Picking up a chair causes the agent to be holding the chair %%
-holds(holding(O),I+1):- occurs(pick(O,L),I).
-%----------------------------------------------------------------------------------------%
-%% An object not known to be held is not %%
--holds(holding(O),I):- not holds(holding(O),I).
-%----------------------------------------------------------------------------------------%
-%% Dropping an object causes it not to be held anymore %%
--holds(holding(O),I+1):- occurs(drop(O,L),I).
-%----------------------------------------------------------------------------------------%
-%% A chair can only be picked up at the table it is at %%
--occurs(pick(Ch,T),I):- #chair(Ch), #table(T), -holds(isattable(Ch,T),I).
-%----------------------------------------------------------------------------------------%
-%----------------------------------------------------------------------------------------%
+
 %% TABLES %%
 %% A table is not free if one of its associated chairs is not free %%
 -holds(isfree(Fr),I):- #table(Fr), -holds(isfree(Ch),I), holds(isattable(Ch,Fr),I).
 %----------------------------------------------------------------------------------------%
-%----------------------------------------------------------------------------------------%
+
 %% ROOMS %%
 %% A customer who is waiting is in the entrance %%
 holds(isinroom(Cu,entrance),I):- holds(iswaiting(Cu),I).
@@ -276,7 +229,7 @@ holds(hasleft(Cu),I+1):- holds(iswaiting(Cu),I), -holds(iswaiting(Cu),I+1), -hol
 %% A client has left if he is not in any room anymore %% COMMENTED
 %holds(hasleft(Cu),I):- -holds(isinroom(Cu,R),I).
 %----------------------------------------------------------------------------------------%
-%----------------------------------------------------------------------------------------%
+
 %% PATHS %%
 %----------------------------------------------------------------------------------------%
 %% Two nodes that are not known to be associated to a piece of furniture are not %%
@@ -301,20 +254,20 @@ areassociated(b,counter).
 %% If there seems not to be an edge between nodes, then there is not %%
 -edge(N1,N2):- not edge(N1,N2).
 %----------------------------------------------------------------------------------------%
-%% The agent can only be on one node at a time %%
--holds(currentlocation(N2),I):- holds(currentlocation(N1),I), N2!=N1.
+%% An employee can only be on one node at a time %%
+-holds(currentlocation(E,N2),I):- holds(currentlocation(E,N1),I), N2!=N1.
 %----------------------------------------------------------------------------------------%
 %% Action go_to triggers a change in currentlocation %%
-holds(currentlocation(N2),I+1):- occurs(go_to(N2),I), holds(currentlocation(N1),I), N2!=N1.
--holds(currentlocation(N1),I+1):- occurs(go_to(N2),I), holds(currentlocation(N1),I), N2!=N1.
+holds(currentlocation(E,N2),I+1):- occurs(go_to(E,N2),I), holds(currentlocation(E,N1),I), N2!=N1.
+-holds(currentlocation(E,N1),I+1):- occurs(go_to(E,N2),I), holds(currentlocation(E,N1),I), N2!=N1.
 %----------------------------------------------------------------------------------------%
-%% If there is no edge between nodes, then go_to cannot occur
--occurs(go_to(N2),I):- -edge(N1,N2), holds(currentlocation(N1),I), N2!=N1.
+%% If there is no edge between nodes, then go_to cannot occur %%
+-occurs(go_to(E,N2),I):- -edge(N1,N2), holds(currentlocation(E,N1),I), N2!=N1.
 %----------------------------------------------------------------------------------------%
-%% The agent cannot go_to a location he is already at %%
--occurs(go_to(N),I):- holds(currentlocation(N),I).
+%% An employee cannot go_to a location he is already at %%
+-occurs(go_to(E,N),I):- holds(currentlocation(E,N),I).
 %----------------------------------------------------------------------------------------%
-%----------------------------------------------------------------------------------------%
+
 %% PICKING UP AND SEATING %%
 %% It is impossible to seat a customer on an occupied chair %%
 -occurs(seat_customer(Cu1,Ch),I):- holds(isonchair(Cu2,Ch),I), Cu2!=Cu1.
@@ -341,9 +294,9 @@ holds(iswithagent(Cu),I):- occurs(pick_customer(Cu),I).
 -occurs(pick_customer(Cu),I):- -holds(iswaiting(Cu),I).
 %----------------------------------------------------------------------------------------%
 %% It is impossible to pick up a customer from another location than node e %%
--occurs(pick_customer(Cu),I):- -holds(currentlocation(e),I).
+-occurs(pick_customer(Cu),I):- -holds(currentlocation(E,e),I).
 %----------------------------------------------------------------------------------------%
-%----------------------------------------------------------------------------------------%
+
 %% PAYMENT %%
 %% Bringing the bill to a customer makes the haspaid fluent true for the following steps %%
 holds(haspaid(Cu),I+1):- occurs(give_bill(Cu),I).
@@ -361,7 +314,10 @@ holds(haspaid(Cu),I+1):- occurs(give_bill(Cu),I).
 -occurs(give_bill(Cu),I):- holds(hasleft(Cu),I).
 %----------------------------------------------------------------------------------------%
 %% Observing a client waving for the bill generates give_bill goal %% NOT COMPLETE YET
-holds(wants_bill(Cu),I):- observed(bill_wave(Cu),true,I).
+%holds(wants_bill(Cu),I):- observed(bill_wave(Cu),true,I).
+%----------------------------------------------------------------------------------------%
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% NOTES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -370,4 +326,9 @@ holds(wants_bill(Cu),I):- observed(bill_wave(Cu),true,I).
 %% it is coherent that it happens IRL, no rule has been added to block that.            %%
 %% It is possible to avoid that by adding the rule:                                     %%
 %% -occurs(give_bill(Cu),I):- occurs(give_bill(Cu),J), J<I.                             %%
+%%                                                                                      %%
+%% 2. Add the axiome de la flemme (minimizing the # of actions)                         %%
+%%                                                                                      %%
+%% 3. Only the go_to can be performed by any employee, add this feature on other        %%
+%% actions too (not only the agent can do things)                                       %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -8,7 +8,7 @@ curly_brack='\{(.*?)\}'
 command='java -jar sparc.jar restaurant2.sparc -A -n '
 command+=str(input('How many answer sets?\n'))
 
-## Running the command line                                   ##
+## Running the command line                                    ##
 args=shlex.split(command)
 ## Retrieving the output                                       ##
 output=subprocess.check_output(args)

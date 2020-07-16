@@ -1,11 +1,18 @@
 // ALREADY DOCUMENTED ACTIONS: //
 # seat_customer(Cu,Ch) # 
-seat_customer(Cu,Ch) causes isonchair(Cu,Ch) if {currentlocation(N), areassociated(N,T), isattable(Ch,T), iswithagent(Cu)}
-impossible seat_customer(Cu,Ch) if hasleft(Cu)
+seat_customer(Cu,Ch) causes isonchair(Cu,Ch) if {currentlocation(N), areassociated(N,T), isattable(Ch,T)} 
+impossible seat_customer(Cu,Ch) if not iswaiting(Cu)
+impossible seat_customer(Cu,Ch) if not isfree(Ch)
+impossible seat_customer(Cu,Ch) if not iswithagent(Cu)
+impossible seat_customer(Cu,Ch) if hasleft(Cu) %% seems superfluous, check that
 
 # pick_customer(Cu) #
-pick_customer(Cu) causes {-iswaiting(Cu), iswithagent(Cu)} if {currentlocation(e), iswaiting(Cu), -isonchair(Cu,Ch) forall Ch} ## not sure about the forall
+pick_customer(Cu) causes {-iswaiting(Cu), iswithagent(Cu)} if iswaiting(Cu)
 impossible pick_customer(Cu) if hasleft(Cu)
+impossible pick_customer(Cu) if not currentlocation(e)
+%% maybe add rule to say no picking up if no chair is free
+
+# drop(O) #
 
 # pick_chair(Ch,T) #
 pick_chair(Ch,T) causes {holding(Ch), -isattable(Ch,T)}
@@ -18,6 +25,7 @@ impossible drop_chair(Ch,T) if {-currentlocation(N), areassociated(N,T)}
 # give_bill(Cu) #
 give_bill(Cu) causes haspaid(Cu) if {currentlocation(N), areassociated(N,T), isattable(Ch,T), isonchair(Cu,Ch)}
 impossible give_bill(Cu) if hasleft(Cu)
+impossible give_bill(Cu) if iswaiting(Cu)
 impossible give_bill(Cu) if haspaid(Cu) % not sure, can order 2x
 + bill_wave triggers the goal give_bill
 
