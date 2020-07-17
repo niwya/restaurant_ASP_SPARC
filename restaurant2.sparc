@@ -183,9 +183,6 @@ holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 :- observed(F,true,I), -holds(F,I).
 :- observed(F,false,I), holds(F,I).
 %----------------------------------------------------------------------------------------%
-%% Full Awareness Axiom:
-holds(F,0) | -holds(F,0) :- #fluent(F).
-%----------------------------------------------------------------------------------------%
 %% Axiome de la flemme (always try to minimize the number of actions to perform) %%
 % #minimize {occurs(A,I):action(A):step(I)}. DOES NOT WORK AS IS
 %----------------------------------------------------------------------------------------%

@@ -5,7 +5,7 @@
 
 import subprocess, shlex, re
 curly_brack='\{(.*?)\}'
-command='java -jar sparc.jar restaurant2.sparc -A -n '
+command='java -jar sparc.jar restaurant3.sparc -A -n '
 command+=str(input('How many answer sets?\n'))
 
 ## Running the command line                                    ##
