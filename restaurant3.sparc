@@ -5,7 +5,7 @@
 #const maxcap=2. % Maximum capacity of tables
 %----------------------------------------------------------------------------------------%
 % Number of steps %
-#const n=5.
+#const n=7.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 sorts 
@@ -122,8 +122,9 @@ holds(isattable(chair1t2, table2),0).
 holds(isattable(chair2t2, table2),0).
 %----------------------------------------------------------------------------------------%
 %% Locations of customers %%
-holds(iswaiting(c1),0).
+%holds(iswaiting(c1),0).
 holds(isonchair(c2,chair2t2),0).
+%holds(isonchair(c1,chair1t2),3).
 %----------------------------------------------------------------------------------------%
 %% Location of waiters and agent %%
 holds(currentlocation(agent,e),0). 
@@ -142,14 +143,17 @@ something_happened(I):- occurs(A,I).
 %----------------------------------------------------------------------------------------%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% GOALS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-goal(I):- holds(haspaid(c2),I).
+%goal(I):- holds(haspaid(c1),I).
+goal(I):- holds(isonchair(c1,Ch),I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------------------------------------------------------------------%
 
 %----------------------------------------------------------------------------------------%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% OBSERVATIONS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-observed(bill_wave(c2), true, 1).
+%observed(bill_wave(c2), true, 1).
+%observed(bill_wave(c1), true, 5).
+observed(iswaiting(c1), true, 1).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------------------------------------------------------------------%
 
@@ -167,9 +171,6 @@ holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 %% Reality check %%
 :- observed(F,true,I), -holds(F,I).
 :- observed(F,false,I), holds(F,I).
-%----------------------------------------------------------------------------------------%
-%% Full Awareness Axiom %% COMMENTED
-%holds(F,0) | -holds(F,0) :- #fluent(F).
 %----------------------------------------------------------------------------------------%
 
 %% CHAIRS %%
@@ -220,9 +221,6 @@ holds(hasleft(Cu),I+1):- holds(iswaiting(Cu),I), -holds(iswaiting(Cu),I+1), -hol
 %% If a customer is not known to have left at step 0, then he has not %%
 -holds(hasleft(Cu),0):- not holds(hasleft(Cu),0).
 %----------------------------------------------------------------------------------------%
-%% A client has left if he is not in any room anymore %% COMMENTED
-%holds(hasleft(Cu),I):- -holds(isinroom(Cu,R),I).
-%----------------------------------------------------------------------------------------%
 
 %% PATHS %%
 %----------------------------------------------------------------------------------------%
@@ -251,6 +249,9 @@ areassociated(b,counter).
 %% An employee can only be on one node at a time %%
 -holds(currentlocation(E,N2),I):- holds(currentlocation(E,N1),I), N2!=N1.
 %----------------------------------------------------------------------------------------%
+%% 2 employees cannot be on the same node at the same time %%
+-holds(currentlocation(E2,N),I):- holds(currentlocation(E1,N),I), E2!=E1.
+%----------------------------------------------------------------------------------------%
 %% Action go_to triggers a change in currentlocation %%
 holds(currentlocation(E,N2),I+1):- occurs(go_to(E,N2),I), holds(currentlocation(E,N1),I), N2!=N1.
 -holds(currentlocation(E,N1),I+1):- occurs(go_to(E,N2),I), holds(currentlocation(E,N1),I), N2!=N1.
@@ -262,7 +263,24 @@ holds(currentlocation(E,N2),I+1):- occurs(go_to(E,N2),I), holds(currentlocation(
 -occurs(go_to(E,N),I):- holds(currentlocation(E,N),I).
 %----------------------------------------------------------------------------------------%
 
-%% PICKING UP AND SEATING %%
+%% PICKING UP CUSTOMERS %%
+%% A customer is not with the agent unless specified %%
+-holds(iswithagent(Cu),I):- not holds(iswithagent(Cu),I).
+%----------------------------------------------------------------------------------------%
+%% The action of picking up a customer causes said customer, if he is waiting, not to be anymore %%
+-holds(iswaiting(Cu),I+1):- occurs(pick_customer(Cu),I).
+%----------------------------------------------------------------------------------------%
+%% The action of picking up a customer causes said customer to be with agent %%
+holds(iswithagent(Cu),I+1):- occurs(pick_customer(Cu),I).
+%----------------------------------------------------------------------------------------%
+%% It is impossible to pick up a customer that is not waiting %%
+-occurs(pick_customer(Cu),I):- -holds(iswaiting(Cu),I).
+%----------------------------------------------------------------------------------------%
+%% It is impossible to pick up a customer from another location than node e %%
+-occurs(pick_customer(Cu),I):- -holds(currentlocation(agent,e),I).
+%----------------------------------------------------------------------------------------%
+
+%% SEATING CUSTOMERS %%
 %% It is impossible to seat a customer on an occupied chair %%
 -occurs(seat_customer(Cu1,Ch),I):- holds(isonchair(Cu2,Ch),I), Cu2!=Cu1.
 %----------------------------------------------------------------------------------------%
@@ -273,35 +291,25 @@ holds(isonchair(Cu,Ch), I+1):- occurs(seat_customer(Cu,Ch), I).
 -occurs(seat_customer(Cu,Ch),I):- -holds(iswithagent(Cu),I).
 %----------------------------------------------------------------------------------------%
 %% It is impossible for the agent to seat a customer if the agent is not on a node associated with the table the chair the customer will be seated on is at %
--occurs(seat_customer(Cu,Ch),I):- holds(currentlocation(N),I), holds(isattable(Ch,T),I), -areassociated(N,T).
+-occurs(seat_customer(Cu,Ch),I):- -holds(currentlocation(agent,N),I), holds(isattable(Ch,T),I), areassociated(N,T).
 %----------------------------------------------------------------------------------------%
-%% A customer is not with the agent unless specified %%
--holds(iswithagent(Cu),I):- not holds(iswithagent(Cu),I).
+%% Seating a customer causes him not to be with agent anymore %%
+-holds(iswithagent(Cu),I+1):- occurs(seat_customer(Cu,Ch),I).
 %----------------------------------------------------------------------------------------%
-%% The action of picking up a customer causes said customer, if he is waiting, not to be anymore %%
--holds(iswaiting(Cu),I+1):- occurs(pick_customer(Cu),I).
+%% A customer that is on a chair cannot be with the agent %%
+-holds(iswithagent(Cu),I):- holds(isonchair(Cu,Ch),I).
 %----------------------------------------------------------------------------------------%
-%% The action of picking up a customer causes said customer to be with agent instantly %%
-holds(iswithagent(Cu),I):- occurs(pick_customer(Cu),I).
-%----------------------------------------------------------------------------------------%
-%% It is impossible to pick up a customer that is not waiting %%
--occurs(pick_customer(Cu),I):- -holds(iswaiting(Cu),I).
-%----------------------------------------------------------------------------------------%
-%% It is impossible to pick up a customer from another location than node e %%
--occurs(pick_customer(Cu),I):- -holds(currentlocation(agent,e),I).
-%----------------------------------------------------------------------------------------%
+
 
 %% PAYMENT %%
 %% Bringing the bill to a customer makes the haspaid fluent true for the following steps %%
 holds(haspaid(Cu),I+1):- occurs(give_bill(Cu),I).
--holds(haspaid(Cu),I+1):- -occurs(give_bill(Cu),I).
 %----------------------------------------------------------------------------------------%
 %% A customer has not paid, unless clearly stated %%
 -holds(haspaid(Cu),I):- not holds(haspaid(Cu),I).
 %----------------------------------------------------------------------------------------%
 %% A customer does not wants his bill unless clearly stated %%
 -holds(wants_bill(Cu),I):- not holds(wants_bill(Cu),I).
--holds(wants_bill(Cu),0).
 %----------------------------------------------------------------------------------------%
 %% The agent cannot bring the bill to a customer if he is not on a node associated with the table the client is at %%
 -occurs(give_bill(Cu),I):- holds(currentlocation(N),I), holds(isattable(Ch,T),I), -areassociated(N,T).
@@ -317,7 +325,7 @@ holds(haspaid(Cu),I+1):- occurs(give_bill(Cu),I).
 %----------------------------------------------------------------------------------------%
 %% Observing a client waving for the bill generates give_bill goal %%
 holds(wants_bill(Cu),I):- observed(bill_wave(Cu),true,I).
--observed(bill_wave(Cu), true, I):- not observed(bill_wave(Cu),true,I).
+-observed(bill_wave(Cu),true,I):- not observed(bill_wave(Cu),true,I).
 %----------------------------------------------------------------------------------------%
 
 
