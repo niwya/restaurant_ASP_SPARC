@@ -13,13 +13,13 @@ impossible pick_customer(Cu) if not currentlocation(agent,e)
 %% maybe add rule to say no picking up if no chair is free
 
 # give_bill(Cu) #
+bill_wave(Cu) causes wants_bill(Cu)
+wants_bill(Cu) causes give_bill(Cu) if {currentlocation(N), areassociated(N,T), isattable(Ch,T), isonchair(Cu,Ch)}
+give_bill(Cu) causes haspaid(Cu)
 impossible give_bill(Cu) if hasleft(Cu)
 impossible give_bill(Cu) if iswaiting(Cu)
 impossible give_bill(Cu) if -wants_bill(Cu)
 impossible bill_wave(Cu) if -isonchair(Ch,Cu) %% NOT ADDED YET
-bill_wave(Cu) causes wants_bill(Cu)
-wants_bill(Cu) causes give_bill(Cu) if {currentlocation(N), areassociated(N,T), isattable(Ch,T), isonchair(Cu,Ch)}
-give_bill(Cu) causes haspaid(Cu)
 
 # go_to(N) #
 go_to(N) causes currentlocation(N) if currentlocation(M)

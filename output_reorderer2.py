@@ -26,9 +26,15 @@ for i in range(len(output_list2)):
     for j in output_list2[i]:
         if j[-1]==',' : j=j[:-1]
         output_list3[i].append(j) 
-print(output_list3)
 
-## Sorting by keywords                                        ##
+## Sorting chronologically                                     ##
+# for i in range(len(output_list3)):
+#     output_list3[i].sort(key = lambda x:int(x.split(',')[-1].split(')')[0]))
+
+print(output_list3)
+#output_list3[i][-2] : sorting key if its an integer
+
+## Printing by keywords                                        ##
 keywords=input('Keywords, separated by a comma:\n')
 keywords=keywords.split(',')
 print("#############################")

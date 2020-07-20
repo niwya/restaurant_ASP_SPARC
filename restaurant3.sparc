@@ -52,12 +52,12 @@ sorts
                     + isfree(#customerfurniture(Fr)) 
                     + isinroom(#entity(E),#room(R)) 
                     + haspaid(#customer(Cu)) 
-                    + hasleft(#customer(Cu)) 
                     + currentlocation(#employee(E),#node(N)) 
                     + iswithagent(#customer(Cu))
 % OBSERVATION-RELATED FLUENTS :
                     + bill_wave(#customer(Cu))                  % "Bring me the bill" sign
-                    + wants_bill(#customer(Cu)).
+                    + wants_bill(#customer(Cu))
+                    + hasleft(#customer(Cu)).
 #fluent = #inertial_fluent.
 %----------------------------------------------------------------------------------------%
 %% Actions %%
@@ -122,9 +122,7 @@ holds(isattable(chair1t2, table2),0).
 holds(isattable(chair2t2, table2),0).
 %----------------------------------------------------------------------------------------%
 %% Locations of customers %%
-%holds(iswaiting(c1),0).
 holds(isonchair(c2,chair2t2),0).
-%holds(isonchair(c1,chair1t2),3).
 %----------------------------------------------------------------------------------------%
 %% Location of waiters and agent %%
 holds(currentlocation(agent,e),0). 
