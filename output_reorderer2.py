@@ -6,7 +6,8 @@
 import subprocess, shlex, re
 curly_brack='\{(.*?)\}'
 command='java -jar sparc.jar restaurant3.sparc -A -n '
-command+=str(input('How many answer sets?\n'))
+n=int(input('How many answer sets?\n'))
+command+=str(n)
 
 ## Running the command line                                    ##
 args=shlex.split(command)
@@ -16,8 +17,10 @@ output=str(output)
 ## Splitting the output according to the different answer sets ##
 ## Each sub-list corresponds to one answer set                 ##
 output_list=re.findall(curly_brack,output)
-output_list2=[0]*len(output_list)
-output_list3=[[]]*len(output_list)
+output_list2=[0]*n
+output_list3=[[]]*n
+exceptional_values=[[]]*n
+normal_values=[[]]*n
 
 for i in range(len(output_list)):
     output_list2[i]=output_list[i].split(' ')
@@ -28,23 +31,28 @@ for i in range(len(output_list2)):
         output_list3[i].append(j) 
 
 ## Sorting chronologically                                     ##
-# for i in range(len(output_list3)):
-#     output_list3[i].sort(key = lambda x:int(x.split(',')[-1].split(')')[0]))
+for i in range(n):
+    for j in range(len(output_list3[i])):
+        if not ('occurs' or 'holds' or 'observed') in output_list3[i][j]: exceptional_values[i].append(output_list3[i][j])
+        else: normal_values[i].append(output_list3[i][j])
 
-print(output_list3)
-#output_list3[i][-2] : sorting key if its an integer
+for i in range(n):
+    for j in range(len(normal_values[i])):
+        normal_values[i].sort(key = lambda x:int(x.split(',')[-1].split(')')[0]))
 
-## Printing by keywords                                        ##
+# Printing by keywords                                        ##
 keywords=input('Keywords, separated by a comma:\n')
 keywords=keywords.split(',')
 print("#############################")
-for i in range(len(output_list3)):
+for i in range(n):
     ind=i+1
     print("Answer set number %d" % ind + ":")
     print("#############################\n")
     for k in keywords:
         print("Keyword "  + k +":")
-        for j in range(len(output_list3[i])):
-            if k in output_list3[i][j]: print(output_list3[i][j])
+        for j in range(len(normal_values[i])):
+            if k in normal_values[i][j]: print(normal_values[i][j])
+        for j in range(len(exceptional_values[i])):
+            if k in exceptional_values[i][j]: print(exceptional_values[i][j])
         print('\n')
     print("#############################")

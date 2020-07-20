@@ -14,7 +14,6 @@ def sort_nicely( l ):
 
 
 def sort_nicely2( l ):
-    l.sort()
     def func(x):
         return x.split(',')[-1].split(')')[0]
     for i in range(len(l)-1):
@@ -25,10 +24,5 @@ def sort_nicely2( l ):
 
 
 test_list.sort(key = lambda x:int(x.split(',')[-1].split(')')[0]))
-#sort_nicely2(test_list)
-#print(test_list)
 
-#sort_nicely2(test_list2)
 print(test_list)
-
-#[print(test_list[i].split(',')[-1][:-1]) for i in range(len(test_list))]
