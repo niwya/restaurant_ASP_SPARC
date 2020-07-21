@@ -1,29 +1,34 @@
 // ALREADY DOCUMENTED ACTIONS: //
+
 # seat_customer(Cu,Ch) # 
-seat_customer(Cu,Ch) causes isonchair(Cu,Ch) if {currentlocation(N), areassociated(N,T), isattable(Ch,T)} 
+seat_customer(Cu,Ch) causes {isonchair(Cu,Ch), -iswithagent(Cu) if {currentlocation(N), areassociated(N,T), isattable(Ch,T)} 
 impossible seat_customer(Cu,Ch) if not isfree(Ch)
 impossible seat_customer(Cu,Ch) if not iswithagent(Cu)
-impossible seat_customer(Cu,Ch) if hasleft(Cu) %% seems superfluous, check that
 
 # pick_customer(Cu) #
-pick(Cu) causes {-iswaiting(Cu), iswithagent(Cu)} if iswaiting(Cu)
-OU BIEN iswaiting(Cu) causes pick(Cu) if {currentlocation(agent,e)}
-impossible pick_customer(Cu) if hasleft(Cu)
+pick(Cu) causes {-iswaiting(Cu), iswithagent(Cu)} 
+impossible pick_customer(Cu) if -iswaiting(Cu)
 impossible pick_customer(Cu) if not currentlocation(agent,e)
-%% maybe add rule to say no picking up if no chair is free
+impossible pick_customer(Cu) if not isfree(Ch)
 
 # give_bill(Cu) #
 bill_wave(Cu) causes wants_bill(Cu)
 wants_bill(Cu) causes give_bill(Cu) if {currentlocation(N), areassociated(N,T), isattable(Ch,T), isonchair(Cu,Ch)}
 give_bill(Cu) causes haspaid(Cu)
-impossible give_bill(Cu) if hasleft(Cu)
-impossible give_bill(Cu) if iswaiting(Cu)
+impossible give_bill(Cu) if -isonchair(Ch,Cu)
 impossible give_bill(Cu) if -wants_bill(Cu)
-impossible bill_wave(Cu) if -isonchair(Ch,Cu) %% NOT ADDED YET
+impossible bill_wave(Cu) if -isonchair(Ch,Cu)
 
 # go_to(N) #
 go_to(N) causes currentlocation(N) if currentlocation(M)
 impossible if not edge(M,N)
+
+
+
+
+
+
+
 
 // OTHER ACTIONS TO BE ADDED //
 
