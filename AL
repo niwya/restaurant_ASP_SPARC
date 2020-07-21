@@ -1,27 +1,26 @@
 // ALREADY DOCUMENTED ACTIONS: //
 
-# seat_customer(Cu,Ch) # 
-seat_customer(Cu,Ch) causes {isonchair(Cu,Ch), -iswithagent(Cu) if {currentlocation(N), areassociated(N,T), isattable(Ch,T)} 
-impossible seat_customer(Cu,Ch) if not isfree(Ch)
-impossible seat_customer(Cu,Ch) if not iswithagent(Cu)
+# pick_customer(E,Cu) #
+pick_customer(E,Cu) causes {-iswaiting(Cu), iswith(E,Cu)} 
+impossible pick_customer(E,Cu) if -iswaiting(Cu)
+impossible pick_customer(E,Cu) if not currentlocation(E,e)
+impossible pick_customer(E,Cu) if not isfree(Ch)
 
-# pick_customer(Cu) #
-pick(Cu) causes {-iswaiting(Cu), iswithagent(Cu)} 
-impossible pick_customer(Cu) if -iswaiting(Cu)
-impossible pick_customer(Cu) if not currentlocation(agent,e)
-impossible pick_customer(Cu) if not isfree(Ch)
+# seat_customer(E,Cu,Ch) # 
+seat_customer(E,Cu,Ch) causes {isonchair(Cu,Ch), -iswith(E,Cu)} if {currentlocation(E,N), areassociated(N,T), isattable(Ch,T)} 
+impossible seat_customer(E,Cu,Ch) if not isfree(Ch)
+impossible seat_customer(E,Cu,Ch) if not iswith(E,Cu)
 
-# give_bill(Cu) #
-bill_wave(Cu) causes wants_bill(Cu)
-wants_bill(Cu) causes give_bill(Cu) if {currentlocation(N), areassociated(N,T), isattable(Ch,T), isonchair(Cu,Ch)}
-give_bill(Cu) causes haspaid(Cu)
-impossible give_bill(Cu) if -isonchair(Ch,Cu)
-impossible give_bill(Cu) if -wants_bill(Cu)
+# give_bill(E,Cu) #
+wants_bill(Cu) causes give_bill(E,Cu) if {currentlocation(E,N), areassociated(N,T), isattable(Ch,T), isonchair(Cu,Ch)}
+give_bill(E,Cu) causes haspaid(Cu)
+impossible give_bill(E,Cu) if -wants_bill(Cu)
 impossible bill_wave(Cu) if -isonchair(Ch,Cu)
 
-# go_to(N) #
-go_to(N) causes currentlocation(N) if currentlocation(M)
-impossible if not edge(M,N)
+# go_to(E,N) #
+go_to(E,N) causes currentlocation(E,N) if {currentlocation(E,M), N!=M}
+impossible go_to(E,N) if {-edge(M,N), currentlocation(E,M)}
+impossible go_to(E2,N) if {currentlocation(E1,N), E2!=E1}
 
 
 
