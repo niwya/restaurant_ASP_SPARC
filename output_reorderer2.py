@@ -33,14 +33,14 @@ for i in range(len(output_list2)):
 ## Sorting chronologically                                     ##
 for i in range(n):
     for j in range(len(output_list3[i])):
-        if not ('occurs' or 'holds' or 'observed') in output_list3[i][j]: exceptional_values[i].append(output_list3[i][j])
-        else: normal_values[i].append(output_list3[i][j])
-
+        if ("occurs" in output_list3[i][j] or "holds" in output_list3[i][j] or "observed" in output_list3[i][j]): normal_values[i].append(output_list3[i][j])
+        else: exceptional_values[i].append(output_list3[i][j])
 for i in range(n):
     for j in range(len(normal_values[i])):
         normal_values[i].sort(key = lambda x:int(x.split(',')[-1].split(')')[0]))
 
-# Printing by keywords                                        ##
+
+## Printing by keywords                                        ##
 keywords=input('Keywords, separated by a comma:\n')
 keywords=keywords.split(',')
 print("#############################")
