@@ -111,7 +111,7 @@ holds(isattable(chair2t2, table2),0).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%% INITIAL SITUATION TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %b_init
-holds(iswaiting(c1),0).
+holds(iswith(agent,c1),0).
 holds(currentlocation(agent,e),0). 
 holds(currentlocation(w1,a),0).
 %e_init
@@ -131,7 +131,8 @@ something_happened(I):- occurs(A,I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% GOALS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %b_goal
-goal(I):- holds(iswith(agent,c1),I).
+goal(I):- holds(isonchair(c1,chair1t1),I).
+%goal(I):- holds(currentlocation(agent,a),I).
 %e_goal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------------------------------------------------------------------%
@@ -225,7 +226,7 @@ holds(wants_bill(Cu),I):- observed(bill_wave(Cu),true,I).
 holds(iswith(E,Cu),I+1):- occurs(pick_customer(E,Cu),I).
 % seat_customer %
 -holds(iswith(E,Cu),I+1):- occurs(seat_customer(E,Cu,Ch),I).
-holds(isonchair(Ch,Cu),I+1):- occurs(seat_customer(E,Cu,Ch),I).
+holds(isonchair(Cu,Ch),I+1):- occurs(seat_customer(E,Cu,Ch),I).
 % give_bill %
 occurs(give_bill(E,Cu),I+1):- holds(wants_bill(Cu),I). 
 holds(haspaid(Cu),I+1):- occurs(give_bill(E,Cu),I).
