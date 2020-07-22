@@ -90,8 +90,7 @@ observed(#fluent, #boolean, #step).
 rules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% Paths linking nodes %% 
-% There is no other paths than the predefined one, paths may be blocked %
+%% FIXED RULES %%
 edge(a,b).
 edge(b,a).  edge(b,c).
 edge(c,b).  edge(c,d).
@@ -107,15 +106,19 @@ holds(isattable(chair2t1, table1),0).
 holds(isattable(chair1t2, table2),0).
 holds(isattable(chair2t2, table2),0).
 %----------------------------------------------------------------------------------------%
-%% Locations of customers %%
-holds(isonchair(c2,chair2t2),0).
+
 %----------------------------------------------------------------------------------------%
-%% Location of waiters and agent %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% INITIAL SITUATION TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%b_init
+holds(iswaiting(c1),0).
 holds(currentlocation(agent,e),0). 
 holds(currentlocation(w1,a),0).
+%e_init
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------------------------------------------------------------------%
 
-%% GOAL GESTION %%
+%% SIMPLE PLANNING MODULE %%
 %% Failure is not an option %%
 success:- goal(I).
 :- not success.
@@ -127,16 +130,17 @@ something_happened(I):- occurs(A,I).
 %----------------------------------------------------------------------------------------%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% GOALS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%goal_begin
-%goal_end
+%b_goal
+goal(I):- holds(iswith(agent,c1),I).
+%e_goal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------------------------------------------------------------------%
 
 %----------------------------------------------------------------------------------------%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% OBSERVATIONS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%obs_begin
-%obs_end
+%b_obs
+%e_obs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------------------------------------------------------------------%
 
@@ -208,7 +212,11 @@ areassociated(b,counter).
 %----------------------------------------------------------------------------------------%
 
 %% OBSERVATIONS %%
-holds(wants_bill(Cu),I):- observed(bill_wave(Cu),I).
+%% Waiting process %%
+-holds(iswaiting(Cu),I):- not holds(iswaiting(Cu),I).
+%% Customer wanting bill %%
+holds(wants_bill(Cu),I):- observed(bill_wave(Cu),true,I).
+-holds(wants_bill(Cu),I):- -holds(isonchair(Cu,Ch),I).
 
 %% ACTIONS %%
 %% Causal laws %%
@@ -216,17 +224,28 @@ holds(wants_bill(Cu),I):- observed(bill_wave(Cu),I).
 -holds(iswaiting(Cu),I+1):- occurs(pick_customer(E,Cu),I).
 holds(iswith(E,Cu),I+1):- occurs(pick_customer(E,Cu),I).
 % seat_customer %
--holds(iswith(E,Cu),I+1):- occurs(seat_customer(E,Cu,Ch),I), holds(currentlocation(E,N)), areassociated(N,T), holds(isattable(Ch,T),I).
-holds(isonchair(Ch,Cu),I+1):- occurs(seat_customer(E,Cu,Ch),I), holds(currentlocation(E,N)), areassociated(N,T), holds(isattable(Ch,T),I).
+-holds(iswith(E,Cu),I+1):- occurs(seat_customer(E,Cu,Ch),I).
+holds(isonchair(Ch,Cu),I+1):- occurs(seat_customer(E,Cu,Ch),I).
 % give_bill %
-occurs(give_bill(E,Cu),I+1):- holds(wants_bill(Cu),I), holds(currentlocation(E,N)), areassociated(N,T), holds(isattable(Ch,T),I). 
+occurs(give_bill(E,Cu),I+1):- holds(wants_bill(Cu),I). 
 holds(haspaid(Cu),I+1):- occurs(give_bill(E,Cu),I).
 % go_to %
 holds(currentlocation(E,N),I+1):- occurs(go_to(E,N),I), holds(currentlocation(E,M),I), N!=M.
 %----------------------------------------------------------------------------------------%
 %% Executability conditions %%
 % pick_customer %
+-occurs(pick_customer(E,Cu),I):- -holds(iswaiting(Cu),I).
+-occurs(pick_customer(E,Cu),I):- -holds(currentlocation(E,e),I).
+-occurs(pick_customer(E,Cu),I):- -holds(isfree(Ch),I).
+-occurs(pick_customer(E,Cu2),I):- holds(iswith(E,Cu1),I), Cu2!=Cu1.
 % seat_customer %
+-occurs(seat_customer(E,Cu,Ch),I):- -holds(isfree(Ch),I).
+-occurs(seat_customer(E,Cu,Ch),I):- -holds(iswith(E,Cu),I).
+-occurs(seat_customer(E,Cu,Ch),I):- holds(currentlocation(E,N),I), holds(isattable(Ch,T),I), -areassociated(N,T).
 % give_bill %
+-occurs(give_bill(E,Cu),I):- -holds(wants_bill(Cu),I).
+-occurs(give_bill(E,Cu),I):- holds(currentlocation(E,N),I), holds(isattable(Ch,T),I), holds(isonchair(Cu,Ch),I), -areassociated(N,T).
 % go_to %
+-occurs(go_to(E,N),I):- holds(currentlocation(E,M),I), -edge(M,N).
+-occurs(go_to(E2,N),I):- holds(currentlocation(E1,N),I), E2!=E1.
 %----------------------------------------------------------------------------------------%

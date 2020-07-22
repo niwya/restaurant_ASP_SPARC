@@ -5,17 +5,19 @@ pick_customer(E,Cu) causes {-iswaiting(Cu), iswith(E,Cu)}
 impossible pick_customer(E,Cu) if -iswaiting(Cu)
 impossible pick_customer(E,Cu) if not currentlocation(E,e)
 impossible pick_customer(E,Cu) if not isfree(Ch)
+impossible pick_customer(E,Cu2) if iswith(E,Cu1), Cu2!=Cu1
 
 # seat_customer(E,Cu,Ch) # 
-seat_customer(E,Cu,Ch) causes {isonchair(Cu,Ch), -iswith(E,Cu)} if {currentlocation(E,N), areassociated(N,T), isattable(Ch,T)} 
+seat_customer(E,Cu,Ch) causes {isonchair(Cu,Ch), -iswith(E,Cu)}
 impossible seat_customer(E,Cu,Ch) if not isfree(Ch)
 impossible seat_customer(E,Cu,Ch) if not iswith(E,Cu)
+impossible seat_customer if {currentlocation(E,N), -areassociated(N,T), isattable(Ch,T)}
 
 # give_bill(E,Cu) #
-wants_bill(Cu) causes give_bill(E,Cu) if {currentlocation(E,N), areassociated(N,T), isattable(Ch,T), isonchair(Cu,Ch)}
+wants_bill(Cu) causes give_bill(E,Cu)
 give_bill(E,Cu) causes haspaid(Cu)
 impossible give_bill(E,Cu) if -wants_bill(Cu)
-impossible bill_wave(Cu) if -isonchair(Ch,Cu)
+impossible give_bill(E,Cu) if {currentlocation(E,N), -areassociated(N,T), isattable(Ch,T), isonchair(Cu,Ch)}
 
 # go_to(E,N) #
 go_to(E,N) causes currentlocation(E,N) if {currentlocation(E,M), N!=M}
