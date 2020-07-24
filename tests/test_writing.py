@@ -22,15 +22,25 @@ obs='%obs_b(\n.*?)*?\n%obs_e\n'
 ## 1. Clear the previous goals/obseravtions ##
 ## Might be a non-optimal way to do so, but it works ##
 ## Does not reset anything if does not work (previous state) ##
+# with open(file, 'r+') as f:
+#     text=f.read()
+#     newf=open('test_writing.sparc', 'w')
+#     try:
+#         new=re.sub(goal, g_lines, text, flags=re.MULTILINE)
+#         new2=re.sub(obs, o_lines, new, flags=re.MULTILINE)
+#         newf.write(new2)
+#         newf.close()
+#     except: 
+#         print("Editing file has failed")
+#         newf.write(text)
+#         newf.close()
+
 with open(file, 'r+') as f:
     text=f.read()
-    newf=open('test_writing.sparc', 'w')
     try:
         new=re.sub(goal, g_lines, text, flags=re.MULTILINE)
         new2=re.sub(obs, o_lines, new, flags=re.MULTILINE)
-        newf.write(new2)
-        newf.close()
+        f.seek(0)
+        f.write(new2)
     except: 
         print("Editing file has failed")
-        newf.write(text)
-        newf.close()
