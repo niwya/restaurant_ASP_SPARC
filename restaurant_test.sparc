@@ -5,7 +5,7 @@
 #const maxcap=2. % Maximum capacity of tables
 %----------------------------------------------------------------------------------------%
 % Number of steps %
-#const n=6.
+#const n=1.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 sorts 
@@ -13,6 +13,8 @@ sorts
 
 %% Step range %%
 #step = 0..n.
+%% Capacities %%
+#num=1..maxcap.
 %----------------------------------------------------------------------------------------%
 %% Population %%
 #waiter=[w][1..wnum].
@@ -41,22 +43,21 @@ sorts
 % CUSTOMER PLACEMENT-RELATED FLUENTS:
                     isonchair(#customer(Cu), #chair(Ch))
                     + isattable(#chair(Ch), #table(T))
-                    + isfree(#customerfurniture(Fr)) 
+                    + isfree(#customerfurniture(Fr))
 % LOCATION-RELATED FLUENTS:
                     + currentlocation(#employee(E), #node(N)) 
 % CUSTOMER-RELATED FLUENTS:
                     + iswaiting(#customer(Cu))
                     + iswith(#employee(E),#customer(Cu))
                     + wants_bill(#customer(Cu))
-                    + haspaid(#customer(Cu))
-                    + satisfied(#customer(Cu))
+                    + haspaid(#customer(Cu)) 
 % OBSERVATION-RELATED FLUENTS:               
                     + #observable_fluent.
 
 #fluent = #inertial_fluent.
 %----------------------------------------------------------------------------------------%
 %% Actions %%
-#actionseat = seat_customer(#employee(E), #customer(Cu), #chair(Ch)).
+#actionseat = seat_customer(#employee(E), #customer(Cu), #table(T)).
 #actioncome = pick_customer(#employee(E), #customer(Cu)).
 #actionpay = give_bill(#employee(E), #customer(Cu)).
 #actiongo = go_to(#employee(E), #node(N)).
@@ -74,6 +75,9 @@ predicates
 %% Paths %%
 edge(#node, #node).
 areassociated(#node, #furniture).
+%----------------------------------------------------------------------------------------%
+%% Tables %%
+hascapacity(#table ,#num).
 %----------------------------------------------------------------------------------------%
 %% Goal %%
 goal(#step).
@@ -101,6 +105,10 @@ edge(f,e).
 edge(h,d).
 % Commutativity of the 'edge' predicate is not clearly stated as rule but no need %
 %----------------------------------------------------------------------------------------%
+%% Capacities of tables %%
+hascapacity(table1,2).
+hascapacity(table2,2).
+%----------------------------------------------------------------------------------------%
 %% Location of chairs at tables %%
 holds(isattable(chair1t1, table1),0).
 holds(isattable(chair2t1, table1),0).
@@ -113,9 +121,9 @@ holds(isattable(chair2t2, table2),0).
 %%%%%%%%%%%%%%%%%%%%%%%%%%% INITIAL SITUATION TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %b_init
 holds(iswith(agent,c1),0).
-holds(iswaiting(c2),0).
-holds(currentlocation(agent,e),0). 
+holds(currentlocation(agent,f),0). 
 holds(currentlocation(w1,a),0).
+holds(isonchair(c2,chair2t2),0).
 %e_init
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------------------------------------------------------------------%
@@ -123,7 +131,7 @@ holds(currentlocation(w1,a),0).
 %% SIMPLE PLANNING MODULE %%
 %% Failure is not an option %%
 success:- goal(I).
-:- not success.
+%:- not success.
 occurs(A,I) | -occurs(A,I) :- not goal(I).
 %% Procrastinating is not an option %%
 something_happened(I):- occurs(A,I).
@@ -133,6 +141,7 @@ something_happened(I):- occurs(A,I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% GOALS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %b_goal
+goal(I):- -holds(isfree(table1),I).
 %e_goal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------------------------------------------------------------------%
@@ -141,8 +150,6 @@ something_happened(I):- occurs(A,I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% OBSERVATIONS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %b_obs
-observed(bill_wave(c1),true,4).
-observed(bill_wave(c2),true,5).
 %e_obs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------------------------------------------------------------------%
@@ -152,7 +159,7 @@ observed(bill_wave(c2),true,5).
 holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 -holds(F, I+1):- #inertial_fluent(F), -holds(F, I), not holds(F, I+1).
 %----------------------------------------------------------------------------------------%
-%% Closed World Assumption for actions (if not known to occur, doesnt occur)  %%
+%% Closed World Assumption for actions %%
 -occurs(A,I):- not occurs(A,I).
 %----------------------------------------------------------------------------------------%
 %% Non-simultaneity of actions %%
@@ -163,12 +170,14 @@ holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 :- observed(F,false,I), holds(F,I).
 %----------------------------------------------------------------------------------------%
 
-%% CHAIRS %%
-%% A chair is free unless stated otherwise %%
+%% FURNITURE %%
+%% CHAIRS AND TABLES %%
+%% A chair/table is, by default, free %%
 holds(isfree(Fr),I):- not -holds(isfree(Fr),I).
 %----------------------------------------------------------------------------------------%
+%% CHAIRS %%
 %% A chair is not free if a customer is sitting on it %%
--holds(isfree(Fr),I):- #chair(Fr), holds(isonchair(Cu,Fr),I).
+-holds(isfree(Ch),I):- holds(isonchair(Cu,Ch),I).
 %----------------------------------------------------------------------------------------%
 %% Two customers cannot share the same chair at the same time %%
 -holds(isonchair(Cu2,Ch),I):- holds(isonchair(Cu1,Ch),I), Cu1!=Cu2.
@@ -179,15 +188,10 @@ holds(isfree(Fr),I):- not -holds(isfree(Fr),I).
 %% A chair cannot be at two tables at the same time %%
 -holds(isattable(Ch,T2),I):- holds(isattable(Ch,T1),I), T2!=T1.
 %----------------------------------------------------------------------------------------%
-%% If customer Cu is not known to be on chair Ch, then he is not %%
--holds(isonchair(Cu, Ch), I):- not holds(isonchair(Cu, Ch), I).
-%----------------------------------------------------------------------------------------%
-
 %% TABLES %%
-%% A table is not free if one of its associated chairs is not free %%
--holds(isfree(Fr),I):- #table(Fr), -holds(isfree(Ch),I), holds(isattable(Ch,Fr),I).
+%% A table is not free if not all of its associated chairs are free %%
+-holds(isfree(T),I):- hascapacity(T,X), #count{Ch:#chair(Ch),holds(isfree(Ch),I),holds(isattable(Ch,T),I)}!=X.
 %----------------------------------------------------------------------------------------%
-
 
 %% PATHS %%
 %----------------------------------------------------------------------------------------%
@@ -220,35 +224,36 @@ areassociated(b,counter).
 %% Customer wanting bill %%
 holds(wants_bill(Cu),I):- observed(bill_wave(Cu),true,I).
 -holds(wants_bill(Cu),I):- -holds(isonchair(Cu,Ch),I).
+%% What can be observed cannot hold true %%
+:- holds(bill_wave(Cu),I).
 
 %% ACTIONS %%
 %% Causal laws %%
 % pick_customer %
--holds(iswaiting(Cu),I+1):- occurs(pick_customer(E,Cu),I).
-holds(iswith(E,Cu),I+1):- occurs(pick_customer(E,Cu),I).
+-holds(iswaiting(Cu),I+1):- occurs(pick_customer(agent,Cu),I).
+holds(iswith(agent,Cu),I+1):- occurs(pick_customer(agent,Cu),I).
 % seat_customer %
--holds(iswith(E,Cu),I+1):- occurs(seat_customer(E,Cu,Ch),I).
-holds(isonchair(Cu,Ch),I+1):- occurs(seat_customer(E,Cu,Ch),I).
+-holds(iswith(agent,Cu),I+1):- occurs(seat_customer(agent,Cu,T),I), holds(isattable(Ch,T),I).
+holds(isonchair(Cu,Ch),I+1):- occurs(seat_customer(agent,Cu,T),I), holds(isattable(Ch,T),I).
 % give_bill %
-occurs(give_bill(E,Cu),I+1):- holds(wants_bill(Cu),I). 
-holds(haspaid(Cu),I+1):- occurs(give_bill(E,Cu),I).
+holds(haspaid(Cu),I+1):- occurs(give_bill(agent,Cu),I).
 % go_to %
-holds(currentlocation(E,N),I+1):- occurs(go_to(E,N),I), holds(currentlocation(E,M),I), N!=M.
+holds(currentlocation(agent,N),I+1):- occurs(go_to(agent,N),I), holds(currentlocation(agent,M),I), N!=M.
 %----------------------------------------------------------------------------------------%
 %% Executability conditions %%
 % pick_customer %
--occurs(pick_customer(E,Cu),I):- -holds(iswaiting(Cu),I).
--occurs(pick_customer(E,Cu),I):- -holds(currentlocation(E,e),I).
--occurs(pick_customer(E,Cu),I):- -holds(isfree(Ch),I).
--occurs(pick_customer(E,Cu2),I):- holds(iswith(E,Cu1),I), Cu2!=Cu1.
+-occurs(pick_customer(agent,Cu),I):- -holds(iswaiting(Cu),I).
+-occurs(pick_customer(agent,Cu),I):- -holds(currentlocation(agent,e),I).
+-occurs(pick_customer(agent,Cu),I):- -holds(isfree(T),I).
+-occurs(pick_customer(agent,Cu2),I):- holds(iswith(agent,Cu1),I), Cu2!=Cu1.
 % seat_customer %
--occurs(seat_customer(E,Cu,Ch),I):- -holds(isfree(Ch),I).
--occurs(seat_customer(E,Cu,Ch),I):- -holds(iswith(E,Cu),I).
--occurs(seat_customer(E,Cu,Ch),I):- holds(currentlocation(E,N),I), holds(isattable(Ch,T),I), -areassociated(N,T).
+-occurs(seat_customer(agent,Cu,T),I):- -holds(isfree(T),I).
+-occurs(seat_customer(agent,Cu,T),I):- -holds(iswith(agent,Cu),I).
+-occurs(seat_customer(agent,Cu,T),I):- holds(currentlocation(agent,N),I), -areassociated(N,T).
 % give_bill %
--occurs(give_bill(E,Cu),I):- -holds(wants_bill(Cu),I).
--occurs(give_bill(E,Cu),I):- holds(currentlocation(E,N),I), holds(isattable(Ch,T),I), holds(isonchair(Cu,Ch),I), -areassociated(N,T).
+-occurs(give_bill(agent,Cu),I):- -holds(wants_bill(Cu),I).
+-occurs(give_bill(agent,Cu),I):- holds(currentlocation(agent,N),I), holds(isattable(Ch,T),I), holds(isonchair(Cu,Ch),I), -areassociated(N,T).
 % go_to %
--occurs(go_to(E,N),I):- holds(currentlocation(E,M),I), -edge(M,N).
--occurs(go_to(E2,N),I):- holds(currentlocation(E1,N),I), E2!=E1.
+-occurs(go_to(agent,N),I):- holds(currentlocation(agent,M),I), -edge(M,N).
+-occurs(go_to(agent,N),I):- holds(currentlocation(E,N),I), agent!=E.
 %----------------------------------------------------------------------------------------%

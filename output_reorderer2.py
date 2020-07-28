@@ -1,4 +1,4 @@
-#import re
+1#import re
 #s="(hello) {man} ily"
 #l = re.findall(k, s)
 #print(l)
@@ -51,7 +51,9 @@ for i in range(n):
     print("Answer set number %d" % ind + ":")
     print("#############################\n")
     for k in keywords:
-        print("Keyword "  + k +":")
+        if k!='':
+            print("Keyword "  + k +":")
+        else: print("No keyword given.") 
         for j in range(len(normal_values[i])):
             if k in normal_values[i][j]: print(normal_values[i][j])
         for j in range(len(exceptional_values[i])):

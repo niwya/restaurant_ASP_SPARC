@@ -1,47 +1,30 @@
 // ALREADY DOCUMENTED ACTIONS: //
 
 # pick_customer(E,Cu) #
-pick_customer(E,Cu) causes {-iswaiting(Cu), iswith(E,Cu)} 
-impossible pick_customer(E,Cu) if -iswaiting(Cu)
-impossible pick_customer(E,Cu) if not currentlocation(E,e)
-impossible pick_customer(E,Cu) if not isfree(Ch)
-impossible pick_customer(E,Cu2) if iswith(E,Cu1), Cu2!=Cu1
+pick_customer(agent,Cu) causes {-iswaiting(Cu), iswith(agent,Cu)} 
+impossible pick_customer(agent,Cu) if not iswaiting(Cu)
+impossible pick_customer(agent,Cu) if not currentlocation(agent,e)
+impossible pick_customer(agent,Cu) if not isfree(T)
+impossible pick_customer(agent,Cu2) if iswith(agent,Cu1), Cu2!=Cu1
 
 # seat_customer(E,Cu,Ch) # 
-seat_customer(E,Cu,Ch) causes {isonchair(Cu,Ch), -iswith(E,Cu)}
-impossible seat_customer(E,Cu,Ch) if not isfree(Ch)
-impossible seat_customer(E,Cu,Ch) if not iswith(E,Cu)
-impossible seat_customer if {currentlocation(E,N), -areassociated(N,T), isattable(Ch,T)}
+seat_customer(agent,Cu,Ch) causes {isonchair(Cu,Ch), -iswith(agent,Cu)} 
+impossible seat_customer(agent,Cu,Ch) if not isfree(Ch)
+impossible seat_customer(agent,Cu,Ch) if not iswith(agent,Cu) 
+impossible seat_customer(agent,Cu,Ch) if {currentlocation(agent,N), -areassociated(N,T), isattable(Ch,T)}
+
+IF CUSTOMERS ARE SAT AT TABLES
+seat_customer(agent,Cu,T) causes {isonchair(Cu,Ch), -iswith(agent,Cu)} if isattable(Ch,T)
+impossible seat_customer(agent,Cu,T) if -isfree(T)
+impossible seat_customer(agent,Cu,T) if -iswith(agent,Cu)
+impossible seat_customer(agent,Cu,T) if {currentlocation(agent,N), -areassociated(N,T)}
 
 # give_bill(E,Cu) #
-wants_bill(Cu) causes give_bill(E,Cu)
-give_bill(E,Cu) causes haspaid(Cu)
-impossible give_bill(E,Cu) if -wants_bill(Cu)
-impossible give_bill(E,Cu) if {currentlocation(E,N), -areassociated(N,T), isattable(Ch,T), isonchair(Cu,Ch)}
+give_bill(agent,Cu) causes haspaid(Cu)
+impossible give_bill(agent,Cu) if -wants_bill(Cu)
+impossible give_bill(agent,Cu) if {currentlocation(agent,N), -areassociated(N,T), isattable(Ch,T), isonchair(Cu,Ch)}
 
 # go_to(E,N) #
-go_to(E,N) causes currentlocation(E,N) if {currentlocation(E,M), N!=M}
-impossible go_to(E,N) if {-edge(M,N), currentlocation(E,M)}
-impossible go_to(E2,N) if {currentlocation(E1,N), E2!=E1}
-
-
-
-
-
-
-
-
-// OTHER ACTIONS TO BE ADDED //
-
-# pick(O) #
-
-# drop(O) #
-
-# pick_chair(Ch,T) #
-pick_chair(Ch,T) causes {holding(Ch), -isattable(Ch,T)}
-impossible pick_chair(Ch,T) if {-currentlocation(N), isattable(Ch,T), areassociated(N,T)}
-impossible pick_chair(Ch,T) if -isfree(Ch)
-
-# drop_chair(Ch,T) #
-drop_chair(Ch,T) causes isattable(Ch,T) if holding(Ch)
-impossible drop_chair(Ch,T) if {-currentlocation(N), areassociated(N,T)}
+go_to(agent,N) causes currentlocation(agent,N) if {currentlocation(agent,M), N!=M}
+impossible go_to(agent,N) if {-edge(M,N), currentlocation(agent,M)}
+impossible go_to(agent,N) if {currentlocation(E,N), agent!=E}

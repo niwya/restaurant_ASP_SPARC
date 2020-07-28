@@ -222,31 +222,30 @@ holds(wants_bill(Cu),I):- observed(bill_wave(Cu),true,I).
 %% ACTIONS %%
 %% Causal laws %%
 % pick_customer %
--holds(iswaiting(Cu),I+1):- occurs(pick_customer(E,Cu),I).
-holds(iswith(E,Cu),I+1):- occurs(pick_customer(E,Cu),I).
+-holds(iswaiting(Cu),I+1):- occurs(pick_customer(agent,Cu),I).
+holds(iswith(agent,Cu),I+1):- occurs(pick_customer(agent,Cu),I).
 % seat_customer %
--holds(iswith(E,Cu),I+1):- occurs(seat_customer(E,Cu,Ch),I).
-holds(isonchair(Cu,Ch),I+1):- occurs(seat_customer(E,Cu,Ch),I).
+-holds(iswith(agent,Cu),I+1):- occurs(seat_customer(agent,Cu,Ch),I).
+holds(isonchair(Cu,Ch),I+1):- occurs(seat_customer(agent,Cu,Ch),I).
 % give_bill %
-occurs(give_bill(E,Cu),I+1):- holds(wants_bill(Cu),I). 
-holds(haspaid(Cu),I+1):- occurs(give_bill(E,Cu),I).
+holds(haspaid(Cu),I+1):- occurs(give_bill(agent,Cu),I).
 % go_to %
-holds(currentlocation(E,N),I+1):- occurs(go_to(E,N),I), holds(currentlocation(E,M),I), N!=M.
+holds(currentlocation(agent,N),I+1):- occurs(go_to(agent,N),I), holds(currentlocation(agent,M),I), N!=M.
 %----------------------------------------------------------------------------------------%
 %% Executability conditions %%
 % pick_customer %
--occurs(pick_customer(E,Cu),I):- -holds(iswaiting(Cu),I).
--occurs(pick_customer(E,Cu),I):- -holds(currentlocation(E,e),I).
--occurs(pick_customer(E,Cu),I):- -holds(isfree(Ch),I).
--occurs(pick_customer(E,Cu2),I):- holds(iswith(E,Cu1),I), Cu2!=Cu1.
+-occurs(pick_customer(agent,Cu),I):- -holds(iswaiting(Cu),I).
+-occurs(pick_customer(agent,Cu),I):- -holds(currentlocation(agent,e),I).
+-occurs(pick_customer(agent,Cu),I):- -holds(isfree(T),I).
+-occurs(pick_customer(agent,Cu2),I):- holds(iswith(agent,Cu1),I), Cu2!=Cu1. %% MIGHT BE CHANGED WHEN GROUPS ADDED
 % seat_customer %
--occurs(seat_customer(E,Cu,Ch),I):- -holds(isfree(Ch),I).
--occurs(seat_customer(E,Cu,Ch),I):- -holds(iswith(E,Cu),I).
--occurs(seat_customer(E,Cu,Ch),I):- holds(currentlocation(E,N),I), holds(isattable(Ch,T),I), -areassociated(N,T).
+-occurs(seat_customer(agent,Cu,Ch),I):- -holds(isfree(Ch),I).
+-occurs(seat_customer(agent,Cu,Ch),I):- -holds(iswith(agent,Cu),I).
+-occurs(seat_customer(agent,Cu,Ch),I):- holds(currentlocation(agent,N),I), holds(isattable(Ch,T),I), -areassociated(N,T).
 % give_bill %
--occurs(give_bill(E,Cu),I):- -holds(wants_bill(Cu),I).
--occurs(give_bill(E,Cu),I):- holds(currentlocation(E,N),I), holds(isattable(Ch,T),I), holds(isonchair(Cu,Ch),I), -areassociated(N,T).
+-occurs(give_bill(agent,Cu),I):- -holds(wants_bill(Cu),I).
+-occurs(give_bill(agent,Cu),I):- holds(currentlocation(agent,N),I), holds(isattable(Ch,T),I), holds(isonchair(Cu,Ch),I), -areassociated(N,T).
 % go_to %
--occurs(go_to(E,N),I):- holds(currentlocation(E,M),I), -edge(M,N).
--occurs(go_to(E2,N),I):- holds(currentlocation(E1,N),I), E2!=E1.
+-occurs(go_to(agent,N),I):- holds(currentlocation(agent,M),I), -edge(M,N).
+-occurs(go_to(agent,N),I):- holds(currentlocation(E,N),I), agent!=E.
 %----------------------------------------------------------------------------------------%

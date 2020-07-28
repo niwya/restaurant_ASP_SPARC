@@ -2,7 +2,7 @@
 import re
 
 # Path of file that is going to be modified
-w_file='test_writing.sparc'
+w_file='restaurant3.sparc'
 
 # Getting an input
 sample=[['observed', 'bill_wave(c1)', 'true', '2'], ['goal', '3', 'isonchair(c1,chair2t1)']]
