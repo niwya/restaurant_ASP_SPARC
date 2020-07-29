@@ -1,6 +1,6 @@
 import time
 ## Testing how to format the observations/goals to update the SPARC file ## 
-sample=[['observed', 'bill_wave(c1)', 'true', '2'], ['goal', '3', 'isonchair(c1,chair2t1)']]
+sample=[['obs', 'bill_wave(c1)', 'true', '2'], ['goal', '3', 'isonchair(c1,chair2t1)']]
 print(sample)
 goals='%b_goal\n'
 observations='%b_obs\n'
@@ -8,7 +8,7 @@ observations='%b_obs\n'
 def format_data(o,g):
     start_time=time.time()
     for list_go in sample:
-        if list_go[0]=='observed':
+        if list_go[0]=='obs':
             # Observations are pretty straightforward, as the first item in list will be the 'observed' indicator, and the
             # following will be the fluent, then if has been seen as true or false then the step at which it occured.
             o+=list_go[0] + '(' + list_go[1] + ',' + list_go[2] +','+list_go[3] + ').\n'

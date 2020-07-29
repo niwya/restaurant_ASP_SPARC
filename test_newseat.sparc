@@ -1,0 +1,93 @@
+#const n = 3.
+
+sorts
+
+#step = 0..n.
+
+#chair = [chair][1..2][t][1..2].
+#table = [table][1..2].
+#furniture = #chair + #table.
+#customer = {c1}.
+#employee = {agent}.
+#node = {f}.
+#num=1..2.
+
+#inertial_fluent =  
+          isonchair(#customer(Cu),#chair(Ch))
+        + iswith(#employee(E),#customer(Cu))
+        + currentlocation(#employee(E), #node(N))
+        + isattable(#chair(Ch), #table(T)).
+#defined_fluent = 
+          isfree(#furniture(Fr)).
+
+#fluent = #inertial_fluent + #defined_fluent.
+
+#action = seat_customer(#employee(E), #customer(Cu), #table(T)).
+
+predicates
+
+areassociated(#node, #table).
+
+hascapacity(#table, #num).
+
+holds(#fluent, #step).
+occurs(#action, #step).
+
+goal(#step).
+success().
+something_happened(#step).
+
+rules
+%% Inertia axiom %%
+holds(F, I+1):- #fluent(F), holds(F,I), not -holds(F, I+1).
+-holds(F, I+1):- #fluent(F), -holds(F, I), not holds(F, I+1).
+%----------------------------------------------------------------------------------------%
+%% Closed World Assumption for actions %%
+-occurs(A,I):- not occurs(A,I).
+%----------------------------------------------------------------------------------------%
+%% CWA for defined fluents %%
+-holds(F,I):- not holds(F,I).
+%----------------------------------------------------------------------------------------%
+%% Non-simultaneity of actions %%
+:- occurs(A1,I), occurs(A2,I), A1!=A2.
+%----------------------------------------------------------------------------------------%
+%% Simple planning module %%
+%success:- goal(I).
+%:- not success.
+occurs(A,I) | -occurs(A,I) :- not goal(I).
+something_happened(I):- occurs(A,I).
+:- goal(I), not goal(I-1), J<I, not something_happened(J).
+%----------------------------------------------------------------------------------------%
+
+%% INITIAL SITUATION %%
+hascapacity(table1, 2).
+hascapacity(table2, 2).
+
+holds(isattable(chair1t1,table1),I).
+holds(isattable(chair1t1,table1),I).
+holds(isattable(chair1t1,table1),I).
+holds(isattable(chair1t1,table1),I).
+
+%% FURNITURE %%
+%% CHAIRS AND TABLES %%
+%% A chair/table is, by default, free %%
+holds(isfree(Fr),I):- not -holds(isfree(Fr),I).
+%----------------------------------------------------------------------------------------%
+%% CHAIRS %%
+%% A chair is not free if a customer is sitting on it %%
+-holds(isfree(Ch),I):- holds(isonchair(Cu,Ch),I).
+%----------------------------------------------------------------------------------------%
+%% Two customers cannot share the same chair at the same time %%
+-holds(isonchair(Cu2,Ch),I):- holds(isonchair(Cu1,Ch),I), Cu1!=Cu2.
+%----------------------------------------------------------------------------------------%
+%% A customer cannot be on two chairs at the same time %% 
+-holds(isonchair(Cu,Ch1),I):- holds(isonchair(Cu,Ch2),I), Ch1!=Ch2.
+%----------------------------------------------------------------------------------------%
+%% A chair cannot be at two tables at the same time %%
+-holds(isattable(Ch,T2),I):- holds(isattable(Ch,T1),I), T2!=T1.
+%----------------------------------------------------------------------------------------%
+%% TABLES %%
+%% A table is not free if not all of its associated chairs are free %%
+-holds(isfree(T),I):- hascapacity(T,X), #count{Ch:#chair(Ch),holds(isfree(Ch),I),holds(isattable(Ch,T),I)}!=X.
+%----------------------------------------------------------------------------------------%
+

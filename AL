@@ -4,16 +4,17 @@
 pick_customer(agent,Cu) causes {-iswaiting(Cu), iswith(agent,Cu)} 
 impossible pick_customer(agent,Cu) if not iswaiting(Cu)
 impossible pick_customer(agent,Cu) if not currentlocation(agent,e)
-impossible pick_customer(agent,Cu) if not isfree(T)
+%impossible pick_customer(agent,Cu) if not isfree(T) % CHANGE THIS ONE, BLOCKS EVERYTHING
 impossible pick_customer(agent,Cu2) if iswith(agent,Cu1), Cu2!=Cu1
 
 # seat_customer(E,Cu,Ch) # 
 seat_customer(agent,Cu,Ch) causes {isonchair(Cu,Ch), -iswith(agent,Cu)} 
-impossible seat_customer(agent,Cu,Ch) if not isfree(Ch)
-impossible seat_customer(agent,Cu,Ch) if not iswith(agent,Cu) 
+impossible seat_customer(agent,Cu,Ch) if -isfree(Ch)
+impossible seat_customer(agent,Cu,Ch) if -iswith(agent,Cu) 
 impossible seat_customer(agent,Cu,Ch) if {currentlocation(agent,N), -areassociated(N,T), isattable(Ch,T)}
 
-IF CUSTOMERS ARE SAT AT TABLES
+IF CUSTOMERS ARE SAT AT TABLES - currently implemented
+# seat_customer(E,Cu,T) # 
 seat_customer(agent,Cu,T) causes {isonchair(Cu,Ch), -iswith(agent,Cu)} if isattable(Ch,T)
 impossible seat_customer(agent,Cu,T) if -isfree(T)
 impossible seat_customer(agent,Cu,T) if -iswith(agent,Cu)

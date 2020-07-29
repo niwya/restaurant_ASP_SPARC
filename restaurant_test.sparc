@@ -5,7 +5,7 @@
 #const maxcap=2. % Maximum capacity of tables
 %----------------------------------------------------------------------------------------%
 % Number of steps %
-#const n=1.
+#const n=2.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 sorts 
@@ -89,7 +89,8 @@ holds(#fluent, #step).
 occurs(#action, #step).
 %----------------------------------------------------------------------------------------%
 %% Gestion of observations %%
-observed(#fluent, #boolean, #step).
+obs(#fluent, #boolean, #step).
+hpd(#action, #step).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 rules
@@ -131,7 +132,7 @@ holds(isonchair(c2,chair2t2),0).
 %% SIMPLE PLANNING MODULE %%
 %% Failure is not an option %%
 success:- goal(I).
-%:- not success.
+:- not success.
 occurs(A,I) | -occurs(A,I) :- not goal(I).
 %% Procrastinating is not an option %%
 something_happened(I):- occurs(A,I).
@@ -142,6 +143,8 @@ something_happened(I):- occurs(A,I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% GOALS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %b_goal
 goal(I):- -holds(isfree(table1),I).
+%goal(I):- holds(iswith(agent,c1),I).
+%goal(I):- holds(currentlocation(agent,e),I).
 %e_goal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------------------------------------------------------------------%
@@ -166,8 +169,8 @@ holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 :- occurs(A1,I), occurs(A2,I), A1!=A2.
 %----------------------------------------------------------------------------------------%
 %% Reality check %%
-:- observed(F,true,I), -holds(F,I).
-:- observed(F,false,I), holds(F,I).
+:- obs(F,true,I), -holds(F,I).
+:- obs(F,false,I), holds(F,I).
 %----------------------------------------------------------------------------------------%
 
 %% FURNITURE %%
@@ -221,8 +224,10 @@ areassociated(b,counter).
 %% OBSERVATIONS %%
 %% Waiting process %%
 -holds(iswaiting(Cu),I):- not holds(iswaiting(Cu),I).
+%% Being with someone %%
+-holds(iswith(E,Cu),I):- not holds(iswith(E,Cu),I).
 %% Customer wanting bill %%
-holds(wants_bill(Cu),I):- observed(bill_wave(Cu),true,I).
+holds(wants_bill(Cu),I):- obs(bill_wave(Cu),true,I).
 -holds(wants_bill(Cu),I):- -holds(isonchair(Cu,Ch),I).
 %% What can be observed cannot hold true %%
 :- holds(bill_wave(Cu),I).
@@ -244,10 +249,9 @@ holds(currentlocation(agent,N),I+1):- occurs(go_to(agent,N),I), holds(currentloc
 % pick_customer %
 -occurs(pick_customer(agent,Cu),I):- -holds(iswaiting(Cu),I).
 -occurs(pick_customer(agent,Cu),I):- -holds(currentlocation(agent,e),I).
--occurs(pick_customer(agent,Cu),I):- -holds(isfree(T),I).
 -occurs(pick_customer(agent,Cu2),I):- holds(iswith(agent,Cu1),I), Cu2!=Cu1.
 % seat_customer %
--occurs(seat_customer(agent,Cu,T),I):- -holds(isfree(T),I).
+-occurs(seat_customer(agent,Cu,T),I):- #table(T), -holds(isfree(T),I).
 -occurs(seat_customer(agent,Cu,T),I):- -holds(iswith(agent,Cu),I).
 -occurs(seat_customer(agent,Cu,T),I):- holds(currentlocation(agent,N),I), -areassociated(N,T).
 % give_bill %
@@ -257,3 +261,9 @@ holds(currentlocation(agent,N),I+1):- occurs(go_to(agent,N),I), holds(currentloc
 -occurs(go_to(agent,N),I):- holds(currentlocation(agent,M),I), -edge(M,N).
 -occurs(go_to(agent,N),I):- holds(currentlocation(E,N),I), agent!=E.
 %----------------------------------------------------------------------------------------%
+
+%% The agent cannot plan anything for the waiters %%
+:- #waiter(W), occurs(pick_customer(W,Cu),I).
+:- #waiter(W), occurs(seat_customer(W,Cu,T),I).
+:- #waiter(W), occurs(give_bill(W,Cu),I).
+:- #waiter(W), occurs(go_to(W,N),I).
