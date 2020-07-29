@@ -5,7 +5,7 @@ import re
 w_file='restaurant3.sparc'
 
 # Getting an input
-sample=[['observed', 'bill_wave(c1)', 'true', '2'], ['goal', '3', 'isonchair(c1,chair2t1)']]
+sample=[['obs', 'bill_wave(c1)', 'true', '2'], ['goal', '3', 'isonchair(c1,chair2t1)']]
 
 # Initializing the goal and observation strings
 goal='%b_goal\n'
@@ -14,7 +14,7 @@ obs='%b_obs\n'
 # Formatting the data
 def format_data(o,g,input_list):
     for list_go in input_list:
-        if list_go[0]=='observed':
+        if list_go[0]=='obs':
             # Observations are pretty straightforward, as the first item in list will be the 'observed' indicator, and the
             # following will be the fluent, then if has been seen as true or false then the step at which it occured.
             o+=list_go[0] + '(' + list_go[1] + ',' + list_go[2] +','+list_go[3] + ').\n'
