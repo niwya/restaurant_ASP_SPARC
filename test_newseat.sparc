@@ -52,7 +52,7 @@ holds(F, I+1):- #fluent(F), holds(F,I), not -holds(F, I+1).
 %----------------------------------------------------------------------------------------%
 %% Simple planning module %%
 success:- goal(I).
-%:- not success.
+:- not success.
 occurs(A,I) | -occurs(A,I) :- not goal(I).
 something_happened(I):- occurs(A,I).
 :- goal(I), not goal(I-1), J<I, not something_happened(J).
@@ -109,9 +109,6 @@ holds(isfree(Fr),I):- not -holds(isfree(Fr),I).
 -holds(isfree(T),I):- hascapacity(T,X), #count{Ch:#chair(Ch),holds(isfree(Ch),I),isattable(Ch,T)}!=X.
 %----------------------------------------------------------------------------------------%
 
-
-
-occurs(seat_customer(agent,c1,table1),0).
 %% SEATING ACTION %%
 holds(nextseat(T,K+1),I+1):- occurs(seat_customer(E,Cu,T),I), isattable(Ch,T), chairnumber(Ch,K), holds(nextseat(T,K),I).
 holds(isonchair(Cu,Ch),I+1):- occurs(seat_customer(E,Cu,T),I), isattable(Ch,T), chairnumber(Ch,K), holds(nextseat(T,K),I).
@@ -120,6 +117,3 @@ holds(isonchair(Cu,Ch),I+1):- occurs(seat_customer(E,Cu,T),I), isattable(Ch,T), 
 -occurs(seat_customer(E,Cu,T),I):- -holds(iswith(agent,Cu),I).
 -occurs(seat_customer(E,Cu,T),I):- holds(currentlocation(E,N),I), -areassociated(N,T).
 -occurs(seat_customer(E,Cu,T),I):- holds(nextseat(T,K1),I), hascapacity(T,K2), K1=K2.
-
-%goal(I):- -holds(isfree(chair1t1),I).
-%goal(1):- occurs(seat_customer(agent,c1,table1),1).
