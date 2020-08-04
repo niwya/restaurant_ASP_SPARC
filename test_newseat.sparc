@@ -16,7 +16,7 @@ sorts
           isonchair(#customer(Cu),#chair(Ch))
         + iswith(#employee(E),#customer(Cu))
         + currentlocation(#employee(E), #node(N))
-        + isattable(#chair(Ch), #table(T)).
+        + nextseat(#table(T), #num(K)).
 #defined_special_fluent = 
           isfree(#furniture(Fr)).
 
@@ -29,6 +29,8 @@ predicates
 areassociated(#node, #table).
 
 hascapacity(#table, #num).
+isattable(#chair, #table).
+chairnumber(#chair, #num).
 
 holds(#fluent, #step).
 occurs(#action, #step).
@@ -45,15 +47,12 @@ holds(F, I+1):- #fluent(F), holds(F,I), not -holds(F, I+1).
 %% Closed World Assumption for actions %%
 -occurs(A,I):- not occurs(A,I).
 %----------------------------------------------------------------------------------------%
-%% CWA for defined fluents %%
-%-holds(F,I):- #defined_fluent(F), not holds(F,I).
-%----------------------------------------------------------------------------------------%
 %% Non-simultaneity of actions %%
 :- occurs(A1,I), occurs(A2,I), A1!=A2.
 %----------------------------------------------------------------------------------------%
 %% Simple planning module %%
 success:- goal(I).
-:- not success.
+%:- not success.
 occurs(A,I) | -occurs(A,I) :- not goal(I).
 something_happened(I):- occurs(A,I).
 :- goal(I), not goal(I-1), J<I, not something_happened(J).
@@ -62,16 +61,29 @@ something_happened(I):- occurs(A,I).
 %% INITIAL SITUATION %%
 hascapacity(table1, 2).
 hascapacity(table2, 2).
+-hascapacity(T,K):- not hascapacity(T,K).
 %----------------------------------------------------------------------------------------%
-holds(isattable(chair1t1,table1),I).
-holds(isattable(chair2t1,table1),I).
-holds(isattable(chair1t2,table2),I).
-holds(isattable(chair2t2,table2),I).
+isattable(chair1t1,table1).
+isattable(chair2t1,table1).
+isattable(chair1t2,table2).
+isattable(chair2t2,table2).
+-isattable(Ch,T2):- isattable(Ch,T1), T2!=T1.
 %----------------------------------------------------------------------------------------%
 holds(currentlocation(agent,f),0).
 %----------------------------------------------------------------------------------------%
 holds(iswith(agent,c1),0).
 %----------------------------------------------------------------------------------------%
+areassociated(f,table1).
+-areassociated(N,T):- not areassociated(N,T).
+%----------------------------------------------------------------------------------------%
+chairnumber(chair1t1,1).
+chairnumber(chair2t1,2).
+chairnumber(chair1t2,1).
+chairnumber(chair2t2,2).
+-chairnumber(Ch,K2):- chairnumber(Ch,K1), K2!=K1.
+holds(nextseat(table1,1),0).
+holds(nextseat(table2,1),0).
+-holds(nextseat(T,K2),I):- holds(nextseat(T,K1),I), K2!=K1.
 
 %% FURNITURE %%
 %% CHAIRS AND TABLES %%
@@ -88,21 +100,26 @@ holds(isfree(Fr),I):- not -holds(isfree(Fr),I).
 %% A customer cannot be on two chairs at the same time %% 
 -holds(isonchair(Cu,Ch1),I):- holds(isonchair(Cu,Ch2),I), Ch1!=Ch2.
 %----------------------------------------------------------------------------------------%
-%% A chair cannot be at two tables at the same time %%
--holds(isattable(Ch,T2),I):- holds(isattable(Ch,T1),I), T2!=T1.
+%% If a customer is not known to be on a chair, then he is not %%
+-holds(isonchair(Cu,Ch),I):- not holds(isonchair(Cu,Ch),I).
 %----------------------------------------------------------------------------------------%
+
 %% TABLES %%
 %% A table is not free if not all of its associated chairs are free %%
--holds(isfree(T),I):- hascapacity(T,X), #count{Ch:#chair(Ch),holds(isfree(Ch),I),holds(isattable(Ch,T),I)}!=X.
+-holds(isfree(T),I):- hascapacity(T,X), #count{Ch:#chair(Ch),holds(isfree(Ch),I),isattable(Ch,T)}!=X.
 %----------------------------------------------------------------------------------------%
 
-%% ACTIONS %%
-%%%holds(isonchair(Cu, Ch), I+1):- 1{Ch:holds(isattable(Ch,T),I)}1, occurs(seat_customer(E, Cu, T), I).
-holds(isonchair(Cu, Ch), I+1):- holds(isattable(Ch,T),I), occurs(seat_customer(E, Cu, T), I).
--holds(iswith(E, Cu), I+1):- occurs(seat_customer(E, Cu, T), I).
 
--occurs(seat_customer(E, Cu, T), I):- #table(T), -holds(isfree(T),I).
--occurs(seat_customer(E, Cu, T), I):- -holds(iswith(E, Cu), I).
--occurs(seat_customer(E, Cu, T), I):- holds(currentlocation(E, N), I), -areassociated(N, T).
 
-goal(I):- holds(isonchair(c1,chair1t1),I).
+occurs(seat_customer(agent,c1,table1),0).
+%% SEATING ACTION %%
+holds(nextseat(T,K+1),I+1):- occurs(seat_customer(E,Cu,T),I), isattable(Ch,T), chairnumber(Ch,K), holds(nextseat(T,K),I).
+holds(isonchair(Cu,Ch),I+1):- occurs(seat_customer(E,Cu,T),I), isattable(Ch,T), chairnumber(Ch,K), holds(nextseat(T,K),I).
+-holds(iswith(E,Cu),I+1):- occurs(seat_customer(E,Cu,T),I), isattable(Ch,T), chairnumber(Ch,K), holds(nextseat(T,K),I).
+
+-occurs(seat_customer(E,Cu,T),I):- -holds(iswith(agent,Cu),I).
+-occurs(seat_customer(E,Cu,T),I):- holds(currentlocation(E,N),I), -areassociated(N,T).
+-occurs(seat_customer(E,Cu,T),I):- holds(nextseat(T,K1),I), hascapacity(T,K2), K1=K2.
+
+%goal(I):- -holds(isfree(chair1t1),I).
+%goal(1):- occurs(seat_customer(agent,c1,table1),1).

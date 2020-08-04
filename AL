@@ -15,11 +15,10 @@ impossible seat_customer(agent,Cu,Ch) if {currentlocation(agent,N), -areassociat
 
 IF CUSTOMERS ARE SAT AT TABLES - currently implemented
 # seat_customer(E,Cu,T) # 
-seat_customer(agent,Cu,T) causes {isonchair(Cu,Ch), -iswith(agent,Cu)} if isattable(Ch,T)
-impossible seat_customer(agent,Cu,T) if -isfree(T)
+seat_customer(agent,Cu,T) causes {nextseat(T,K+1), isonchair(Cu,Ch), -iswith(agent,Cu)} if {isattable(Ch,T), chairnumber(Ch,K), nextseat(T,K)}
 impossible seat_customer(agent,Cu,T) if -iswith(agent,Cu)
 impossible seat_customer(agent,Cu,T) if {currentlocation(agent,N), -areassociated(N,T)}
-
+impossible seat_customer(agent,Cu,T) if {nextseat(T,K1), hascapacity(T,K2), K1=K2}
 # give_bill(E,Cu) #
 give_bill(agent,Cu) causes haspaid(Cu)
 impossible give_bill(agent,Cu) if -wants_bill(Cu)
