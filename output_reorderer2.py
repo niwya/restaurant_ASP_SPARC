@@ -1,8 +1,3 @@
-1#import re
-#s="(hello) {man} ily"
-#l = re.findall(k, s)
-#print(l)
-
 import subprocess, shlex, re
 curly_brack='\{(.*?)\}'
 #command= 'java -jar sparc.jar restaurant_basic.sparc'
@@ -20,6 +15,7 @@ output=str(output)
 ## Splitting the output according to the different answer sets ##
 ## Each sub-list corresponds to one answer set                 ##
 output_list=re.findall(curly_brack,output)
+print(output_list)
 output_list2=[0]*n
 output_list3=[[]]*n
 exceptional_values=[[]]*n

@@ -193,98 +193,15 @@ goal(I):- holds(currentlocation(agent,e),I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%% OBSERVATIONS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%
 %b_obs
-%obs(bill_wave(c1), true, 0).
-%e_obs
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%------------------------------------------------------------------------------%
-
-%% CHAIRS %%
-%% A chair is not free if a customer is sitting on it %%
--holds(isfree(Ch),I):- holds(isonchair(Cu,Ch),I).
-%------------------------------------------------------------------------------%
-%% Two customers cannot share the same chair at the same time %%
--holds(isonchair(Cu2,Ch),I):- holds(isonchair(Cu1,Ch),I), Cu1!=Cu2.
-%------------------------------------------------------------------------------%
-%% A customer cannot be on two chairs at the same time %% 
--holds(isonchair(Cu,Ch1),I):- holds(isonchair(Cu,Ch2),I), Ch1!=Ch2.
-%------------------------------------------------------------------------------%
-%% If a customer is not known to be on a chair, then he is not %%
--holds(isonchair(Cu,Ch),I):- not holds(isonchair(Cu,Ch),I).
-%------------------------------------------------------------------------------%
-%% A chair cannot have two different numbers %%
--chairnumber(Ch,K2):- chairnumber(Ch,K1), K2!=K1.
-%------------------------------------------------------------------------------%
-%% A chair cannot be at two tables at the same time %%
--isattable(Ch,T2):- isattable(Ch,T1), T2!=T1.
-%------------------------------------------------------------------------------%
-
-%% TABLES %%
-%% A table cannot have multiple capacities %%
--hascapacity(T,K):- not hascapacity(T,K).
-%------------------------------------------------------------------------------%
-%% A table is not free if not all of its associated chairs are free %%
--holds(isfree(T), I):- hascapacity(T, X), #count{Ch : #chair(Ch), holds(isfree(Ch), I),isattable(Ch, T)} != X.
-%------------------------------------------------------------------------------%
-
-%% PATHS %%
-%% Two nodes that are not known to be associated to a piece of furniture are not %%
--areassociated(N,F):- not areassociated(N,F).
-%------------------------------------------------------------------------------%
-%% If there seems not to be an edge between nodes, then there is not %%
--edge(N1,N2):- not edge(N1,N2).
-%------------------------------------------------------------------------------%
-
-%% MOVING AROUND %%
-%% An employee can only be on one node at a time %%
--holds(currentlocation(E,N2),I):- holds(currentlocation(E,N1),I), N2!=N1.
-%------------------------------------------------------------------------------%
-
-%% The waiters actions cannot be planned %%
-:- occurs(pick_customer(W,Cu),I), #waiter(W).
-:- occurs(seat_customer(W,Cu,T),I), #waiter(W).
-:- occurs(give_bill(W,Cu),I), #waiter(W).
-:- occurs(go_to(W,N),I), #waiter(W).
-
-%% ACTIONS %%
-%% Causal laws %%
-%% pick_customer %%
--holds(iswaiting(Cu),I+1):- occurs(pick_customer(agent,Cu),I).
-holds(iswith(agent,Cu),I+1):- occurs(pick_customer(agent,Cu),I).
-%% seat_customer %%
-holds(nextseat(T,K+1),I+1):- occurs(seat_customer(agent,Cu,T),I), isattable(Ch,T), chairnumber(Ch,K), holds(nextseat(T,K),I).
-holds(isonchair(Cu,Ch),I+1):- occurs(seat_customer(agent,Cu,T),I), isattable(Ch,T), chairnumber(Ch,K), holds(nextseat(T,K),I).
--holds(iswith(agent,Cu),I+1):- occurs(seat_customer(agent,Cu,T),I), isattable(Ch,T), chairnumber(Ch,K), holds(nextseat(T,K),I).
-%% give_bill %%
-holds(haspaid(Cu),I+1):- occurs(give_bill(agent,Cu),I).
-%% go_to %%
-holds(currentlocation(agent,N),I+1):- occurs(go_to(agent,N),I), holds(currentlocation(agent,M),I), N!=M.
-%------------------------------------------------------------------------------%
-%% Executability conditions %%
-%% pick_customer %%
--occurs(pick_customer(agent,Cu),I):- -holds(iswaiting(Cu),I).
--occurs(pick_customer(agent,Cu),I):- -holds(currentlocation(agent,e),I).
--occurs(pick_customer(agent,Cu),I):- -holds(isfree(T),I).
--occurs(pick_customer(agent,Cu2),I):- holds(iswith(agent,Cu1),I), Cu2!=Cu1.
-%% seat_customer %%
--occurs(seat_customer(agent,Cu,T),I):- -holds(iswith(agent,Cu),I).
--occurs(seat_customer(agent,Cu,T),I):- holds(currentlocation(agent,N),I), -areassociated(N,T).
--occurs(seat_customer(agent,Cu,T),I):- holds(nextseat(T,K1),I), hascapacity(T,K2), K1=K2.
-%% give_bill %%
--occurs(give_bill(agent,Cu),I):- -holds(wantsbill(Cu),I).
--occurs(give_bill(agent,Cu),I):- holds(currentlocation(agent,N),I), isattable(Ch,T), holds(isonchair(Cu,Ch),I), -areassociated(N,T).
-%% go_to %%
--occurs(go_to(agent,N),I):- holds(currentlocation(agent,M),I), -edge(M,N).
--occurs(go_to(agent,N),I):- holds(currentlocation(agent,N),I).
-%------------------------------------------------------------------------------%
-%% Specific rules %%
-%% seat_customer %%
-%% There cannot be two distinct next seats %%
--holds(nextseat(T,K2),I):- holds(nextseat(T,K1),I), K2!=K1.
-%------------------------------------------------------------------------------%
-
-%% OBSERVATIONS %%
-%% Waiting process %%
--holds(iswaiting(Cu),I):- not holds(iswaiting(Cu),I).
-%% Customer wanting bill %%
-holds(wantsbill(Cu),I):- obs(bill_wave(Cu),true,I).
--holds(wantsbill(Cu),I):- -holds(isonchair(Cu,Ch),I).
+obs(1596649604.9990742,true,0).
+obs(1596649605.899677,true,1).
+obs(1596649606.1998734,true,1).
+obs(1596649606.8002675,true,2).
+obs(1596649607.1054637,true,2).
+obs(1596649607.7058573,true,3).
+obs(1596649608.0060542,true,3).
+obs(1596649608.9066558,true,4).
+obs(1596649609.807246,true,5).
+obs(1596649610.107455,true,5).
+obs(1596649610.7078485,true,6).
+obs(1596649611.013032,true,6).

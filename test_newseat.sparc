@@ -8,7 +8,8 @@ sorts
 #table = [table][1..2].
 #furniture = #chair + #table.
 #customer = {c1}.
-#employee = {agent}.
+#waiter = {w1}.
+#employee = {agent} + #waiter.
 #node = {f}.
 #num=1..2.
 
@@ -117,3 +118,7 @@ holds(isonchair(Cu,Ch),I+1):- occurs(seat_customer(E,Cu,T),I), isattable(Ch,T), 
 -occurs(seat_customer(E,Cu,T),I):- -holds(iswith(agent,Cu),I).
 -occurs(seat_customer(E,Cu,T),I):- holds(currentlocation(E,N),I), -areassociated(N,T).
 -occurs(seat_customer(E,Cu,T),I):- holds(nextseat(T,K1),I), hascapacity(T,K2), K1=K2.
+
+:- occurs(seat_customer(W,Cu,T),I),  #waiter(W).
+
+goal(I):- holds(isonchair(c1,Ch),I).
