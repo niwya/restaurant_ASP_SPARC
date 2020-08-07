@@ -5,6 +5,7 @@ import subprocess, shlex, re
 
 class CommunicationAspThread(QThread):
     newObservation_signal = pyqtSignal(str, bool)
+    newOrder_signal = pyqtSignal(str, bool)
     def __init__(self):
         super().__init__()
         self.state = False
@@ -15,6 +16,7 @@ class CommunicationAspThread(QThread):
         self.aspFilePath = 'test_communication.sparc'
 
         self.newObservation_signal.connect(self.newObservation)
+        self.newOrder_signal.connect(self.newOrder)
     
     def setState(self, b:bool):
         self.stepCounter = 0
@@ -46,14 +48,21 @@ class CommunicationAspThread(QThread):
         print('New observation updated:\n' + newObsStr)
 
     def updateOrder(self):
+        ## Command line to retrieve only 1 answer set ##
         self.orderCommand = 'java -jar sparc.jar restaurant_test2.sparc -A -n 1'
+        ## Filtering keyword to only retrieve actions to perform ##
         self.orderKeyword = 'occurs'
+
         self.orderTransmit = []
+        self.orderTransmit_formatted = []
+
+        ## Formatting, running the command and retrieving, formatting the output ##
         args = shlex.split(self.orderCommand)
         output = subprocess.check_output(args)
         output = str(output)
         outputList = re.findall('\{(.*?)\}', output)
         outputList = outputList[0].split(' ')
+
         orderList = []
 
         try : 
@@ -66,12 +75,28 @@ class CommunicationAspThread(QThread):
             print('New orders received:')
             print(self.orderTransmit)
 
-        except : print("The program is inconsistent (SPARC).")
+            n = len(self.orderTransmit)
+            if n==0 : 
+            else:
+                orderList_formatted = [['', '']]*n
+
+                for i in range(n):
+                    temp = self.orderTransmit[i][7:-1]
+                    matches = re.finditer(r"(?:[^\,](?!(\,)))+$", temp)
+                    for matchNum, match in enumerate(matches, start=1):
+                        orderList_formatted[i][0] = temp[:match.start()-1]
+                        orderList_formatted[i][1] = match.group()
+
+        except : print("The SPARC program is inconsistent.")
 
 
     @pyqtSlot(str, bool)
     def newObservation(self, name:str, state:bool):
         self.currentObsDict[name] = state
+    @pyqtSlot(str, bool)
+    def newOrder(self, name:str, state:bool):
+        
+
 
 
 if __name__ == "__main__":
