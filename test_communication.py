@@ -5,7 +5,7 @@ import subprocess, shlex, re
 
 class CommunicationAspThread(QThread):
     newObservation_signal = pyqtSignal(str, bool)
-    newOrder_signal = pyqtSignal(str, bool)
+    newOrder_signal = pyqtSignal(str, int)
     def __init__(self):
         super().__init__()
         self.state = False
@@ -16,7 +16,6 @@ class CommunicationAspThread(QThread):
         self.aspFilePath = 'test_communication.sparc'
 
         self.newObservation_signal.connect(self.newObservation)
-        self.newOrder_signal.connect(self.newOrder)
     
     def setState(self, b:bool):
         self.stepCounter = 0
@@ -54,7 +53,6 @@ class CommunicationAspThread(QThread):
         self.orderKeyword = 'occurs'
 
         self.orderTransmit = []
-        self.orderTransmit_formatted = []
 
         ## Formatting, running the command and retrieving, formatting the output ##
         args = shlex.split(self.orderCommand)
@@ -76,7 +74,7 @@ class CommunicationAspThread(QThread):
             print(self.orderTransmit)
 
             n = len(self.orderTransmit)
-            if n==0 : 
+            if n==0 : self.newOrder_signal.emit('', 0)
             else:
                 orderList_formatted = [['', '']]*n
 
@@ -86,16 +84,16 @@ class CommunicationAspThread(QThread):
                     for matchNum, match in enumerate(matches, start=1):
                         orderList_formatted[i][0] = temp[:match.start()-1]
                         orderList_formatted[i][1] = match.group()
+                
+                for i in range(n):
+                    self.newOrder_signal.emit(orderList_formatted[i][0], int(orderList_formatted[i][1]))
 
         except : print("The SPARC program is inconsistent.")
 
 
     @pyqtSlot(str, bool)
     def newObservation(self, name:str, state:bool):
-        self.currentObsDict[name] = state
-    @pyqtSlot(str, bool)
-    def newOrder(self, name:str, state:bool):
-        
+        self.currentObsDict[name] = state    
 
 
 
