@@ -8,12 +8,14 @@ class CommunicationAspThread(QThread):
     newOrder_signal = pyqtSignal(str, int)
     def __init__(self):
         super().__init__()
+
         self.state = False
         self.stepDuration = 0.5 # duration between two step (secondes)
         self.lastTime = time.time()
         self.stepCounter = 0
         self.currentObsDict = {}
-        self.aspFilePath = "test_communication.sparc"
+        self.currentOrdDict = {}
+        self.aspFilePath = 'test_communication.sparc'
 
         self.newObservation_signal.connect(self.newObservation)
     
@@ -25,32 +27,32 @@ class CommunicationAspThread(QThread):
         while True:
             if self.state:
                 if time.time() - self.lastTime > self.stepDuration:
+                    self.currentOrdDict = {}
                     self.updateObservation()
                     self.updateOrder()
 
                     self.stepCounter += 1
                     self.currentObsDict = {}
                     self.lastTime = time.time()
+                    print(self.getOrders())
     
     def updateObservation(self):
-        newObsStr = ""
+        newObsStr = ''
         for obs in self.currentObsDict.keys():
-            newObsStr += "obs(" + obs + ","
-            newObsStr += "true" if self.currentObsDict[obs] else "false"
-            newObsStr += "," + str(self.stepCounter) + ").\n"
+            newObsStr += 'obs(' + obs + ','
+            newObsStr += 'true' if self.currentObsDict[obs] else 'false'
+            newObsStr += ',' + str(self.stepCounter) + ').\n'
         
         for line in fileinput.FileInput(self.aspFilePath,inplace=1):
             if "%e_obs" in line:
                 line=line.replace(line, newObsStr + line)
-            print(line,end="")
-
-        print("New observation updated:\n" + newObsStr)
+            print(line,end='')
 
     def updateOrder(self):
         ## Command line to retrieve only 1 answer set ##
-        self.orderCommand = "java -jar sparc.jar restaurant_test2.sparc -A -n 1"
+        self.orderCommand = 'java -jar sparc.jar restaurant_test2.sparc -A -n 1'
         ## Filtering keyword to only retrieve actions to perform ##
-        self.orderKeyword = "occurs"
+        self.orderKeyword = 'occurs'
 
         self.orderTransmit = []
 
@@ -58,25 +60,25 @@ class CommunicationAspThread(QThread):
         args = shlex.split(self.orderCommand)
         output = subprocess.check_output(args)
         output = str(output)
-        outputList = re.findall(r"\{(.*?)\}", output)
+        outputList = re.findall('\{(.*?)\}', output)
         outputList = outputList[0].split(' ')
 
         orderList = []
 
         try : 
             for i in range(len(outputList)):
-                if "occurs" in outputList[i] and not "-occurs" in outputList[i]:
+                if 'occurs' in outputList[i] and not '-occurs' in outputList[i]:
                     if outputList[i][-1]==',': 
                         outputList[i]=outputList[i][:-1]
                     orderList.append(outputList[i])
             if orderList != self.orderTransmit: self.orderTransmit = orderList
-            print("New orders received:")
-            print(self.orderTransmit)
+            #print('New orders received:')
+            #print(self.orderTransmit)
 
             n = len(self.orderTransmit)
-            if n==0 : self.newOrder_signal.emit("", 0)
+            if n==0 : self.newOrder_signal.emit('', 0)
             else:
-                orderList_formatted = [["", ""]]*n
+                orderList_formatted = [['', '']]*n
 
                 for i in range(n):
                     temp = self.orderTransmit[i][7:-1]
@@ -86,25 +88,28 @@ class CommunicationAspThread(QThread):
                         orderList_formatted[i][1] = match.group()
                 
                 for i in range(n):
-                    self.newOrder_signal.emit(orderList_formatted[i][0], int(orderList_formatted[i][1]))
+                    self.currentOrdDict[orderList_formatted[i][0]] = int(orderList_formatted[i][1])
+                    #print(orderList_formatted[i][1])
+                    #self.newOrder_signal.emit(orderList_formatted[i][0], int(orderList_formatted[i][1]))
 
         except : print("The SPARC program is inconsistent.")
 
-
     @pyqtSlot(str, bool)
     def newObservation(self, name:str, state:bool):
-        self.currentObsDict[name] = state    
-
+        self.currentObsDict[name] = state
+    
+    def getOrders(self):
+        return self.currentOrdDict
 
 
 if __name__ == "__main__":
+
     import sys
     from PyQt5 import QtWidgets as Qtw
     app = Qtw.QApplication(sys.argv)
     aspThread = CommunicationAspThread()
     aspThread.setState(True)
     aspThread.start()
-
     lastTime = time.time()
 
     while(True):
