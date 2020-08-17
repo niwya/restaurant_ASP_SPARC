@@ -13,7 +13,7 @@ class CommunicationAspThread(QThread):
         self.lastTime = time.time()
         self.stepCounter = 0
         self.currentObsDict = {}
-        self.aspFilePath = 'test_communication.sparc'
+        self.aspFilePath = "test_communication.sparc"
 
         self.newObservation_signal.connect(self.newObservation)
     
@@ -33,24 +33,24 @@ class CommunicationAspThread(QThread):
                     self.lastTime = time.time()
     
     def updateObservation(self):
-        newObsStr = ''
+        newObsStr = ""
         for obs in self.currentObsDict.keys():
-            newObsStr += 'obs(' + obs + ','
-            newObsStr += 'true' if self.currentObsDict[obs] else 'false'
-            newObsStr += ',' + str(self.stepCounter) + ').\n'
+            newObsStr += "obs(" + obs + ","
+            newObsStr += "true" if self.currentObsDict[obs] else "false"
+            newObsStr += "," + str(self.stepCounter) + ").\n"
         
         for line in fileinput.FileInput(self.aspFilePath,inplace=1):
             if "%e_obs" in line:
                 line=line.replace(line, newObsStr + line)
-            print(line,end='')
+            print(line,end="")
 
-        print('New observation updated:\n' + newObsStr)
+        print("New observation updated:\n" + newObsStr)
 
     def updateOrder(self):
         ## Command line to retrieve only 1 answer set ##
-        self.orderCommand = 'java -jar sparc.jar restaurant_test2.sparc -A -n 1'
+        self.orderCommand = "java -jar sparc.jar restaurant_test2.sparc -A -n 1"
         ## Filtering keyword to only retrieve actions to perform ##
-        self.orderKeyword = 'occurs'
+        self.orderKeyword = "occurs"
 
         self.orderTransmit = []
 
@@ -58,25 +58,25 @@ class CommunicationAspThread(QThread):
         args = shlex.split(self.orderCommand)
         output = subprocess.check_output(args)
         output = str(output)
-        outputList = re.findall('\{(.*?)\}', output)
+        outputList = re.findall(r"\{(.*?)\}", output)
         outputList = outputList[0].split(' ')
 
         orderList = []
 
         try : 
             for i in range(len(outputList)):
-                if 'occurs' in outputList[i] and not '-occurs' in outputList[i]:
+                if "occurs" in outputList[i] and not "-occurs" in outputList[i]:
                     if outputList[i][-1]==',': 
                         outputList[i]=outputList[i][:-1]
                     orderList.append(outputList[i])
             if orderList != self.orderTransmit: self.orderTransmit = orderList
-            print('New orders received:')
+            print("New orders received:")
             print(self.orderTransmit)
 
             n = len(self.orderTransmit)
-            if n==0 : self.newOrder_signal.emit('', 0)
+            if n==0 : self.newOrder_signal.emit("", 0)
             else:
-                orderList_formatted = [['', '']]*n
+                orderList_formatted = [["", ""]]*n
 
                 for i in range(n):
                     temp = self.orderTransmit[i][7:-1]

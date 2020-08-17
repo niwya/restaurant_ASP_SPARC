@@ -1,5 +1,5 @@
 import subprocess, shlex, re
-curly_brack='\{(.*?)\}'
+curly_brack=r'\{(.*?)\}'
 #command= 'java -jar sparc.jar restaurant_basic.sparc'
 command= 'java -jar sparc.jar restaurant_test2.sparc'
 #command='java -jar sparc.jar test_newseat.sparc'
