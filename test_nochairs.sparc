@@ -1,0 +1,41 @@
+#const n=2.
+
+sorts
+
+#step = 0..n.
+
+#num = 1..2.
+
+#table = [table][1..2].
+#furniture = #table.
+#customer = {c1}.
+
+#inertial_fluent = 
+                  isattable(#customer, #table)
+                + hasoccupancy(#table, #num).
+#defined_fluent_special = 
+                  isfree(#furniture).
+#fluent = #inertial_fluent + #defined_fluent_special.
+
+predicates
+hascapacity(#table, #num).
+holds(#fluent, #step).
+
+rules
+%% Inertia axiom %%
+holds(F, I+1):- #fluent(F), holds(F,I), not -holds(F, I+1).
+-holds(F, I+1):- #fluent(F), -holds(F, I), not holds(F, I+1).
+%----------------------------------------------------------------------------------------%
+hascapacity(table1, 2).
+hascapacity(table2, 2).
+-hascapacity(T, N):- not hascapacity(T, N).
+
+-holds(isattable(Cu, T), I):- not holds(isattable(Cu, T), I).
+
+%% A table is free by default
+holds(isfree(T), I):- not -holds(isfree(T), I).
+%% A table is not free if its occupancy is not 0
+-holds(isfree(T), I):- holds(hasoccupancy(T, X), I), X!=0.
+
+holds(hasoccupancy(T, K), I):- K = #count{Cu : holds(isattable(Cu, T), I)}.
+

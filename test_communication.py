@@ -15,7 +15,7 @@ class CommunicationAspThread(QThread):
         self.stepCounter = 0
         self.currentObsDict = {}
         self.currentOrdDict = {}
-        self.aspFilePath = 'test_communication.sparc'
+        self.aspFilePath = 'restaurant_test2.sparc'
 
         self.newObservation_signal.connect(self.newObservation)
     
@@ -115,6 +115,6 @@ if __name__ == "__main__":
     while(True):
         if time.time() - lastTime > 0.3:
             lastTime = time.time()
-            aspThread.newObservation_signal.emit(str(lastTime), True)
+            aspThread.newObservation_signal.emit("bill_wave(c1)", True)
 
     sys.exit(app.exec_())

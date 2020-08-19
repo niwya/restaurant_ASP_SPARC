@@ -286,5 +286,5 @@ holds(currentlocation(agent,N),I+1):- occurs(go_to(agent,N),I), holds(currentloc
 %% Waiting process %%
 -holds(iswaiting(Cu),I):- not holds(iswaiting(Cu),I).
 %% Customer wanting bill %%
-holds(wantsbill(Cu),I):- obs(bill_wave(Cu),true,I).
+%holds(wantsbill(Cu),I):- obs(bill_wave(Cu),true,I).
 -holds(wantsbill(Cu),I):- -holds(isonchair(Cu,Ch),I).
