@@ -1,41 +1,64 @@
-#const n=2.
+#const n = 2.      % Number of steps to plan on 
+#const maxcap = 2. % Maximum capacity within the tables
+#const tnum = 2.   % Total number of tables
 
 sorts
 
 #step = 0..n.
 
-#num = 1..2.
+#num = 0..maxcap.
 
-#table = [table][1..2].
+#table = [table][1..tnum].
 #furniture = #table.
 #customer = {c1}.
 
 #inertial_fluent = 
+%% Customer placement %%
                   isattable(#customer, #table)
+%% Tables occupancy %%
                 + hasoccupancy(#table, #num).
 #defined_fluent_special = 
                   isfree(#furniture).
+
 #fluent = #inertial_fluent + #defined_fluent_special.
 
 predicates
+
 hascapacity(#table, #num).
+
 holds(#fluent, #step).
 
 rules
-%% Inertia axiom %%
+%% GLOBAL RULES - Inertia axiom %%
 holds(F, I+1):- #fluent(F), holds(F,I), not -holds(F, I+1).
 -holds(F, I+1):- #fluent(F), -holds(F, I), not holds(F, I+1).
-%----------------------------------------------------------------------------------------%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%------------------------------------------------------------------------------%
+%% INITIAL SITUATION - Restaurant layout %%
 hascapacity(table1, 2).
 hascapacity(table2, 2).
+%------------------------------------------------------------------------------%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOMAIN RULES - Tables occupancy %%
+% A table can only have one fixed capacity %
 -hascapacity(T, N):- not hascapacity(T, N).
-
--holds(isattable(Cu, T), I):- not holds(isattable(Cu, T), I).
-
-%% A table is free by default
+%------------------------------------------------------------------------------%
+% A table is free by default (special CWA) %
 holds(isfree(T), I):- not -holds(isfree(T), I).
-%% A table is not free if its occupancy is not 0
--holds(isfree(T), I):- holds(hasoccupancy(T, X), I), X!=0.
-
-holds(hasoccupancy(T, K), I):- K = #count{Cu : holds(isattable(Cu, T), I)}.
-
+%------------------------------------------------------------------------------%
+% A table is not free if its occupancy is not 0 %
+-holds(isfree(T), I):- holds(hasoccupancy(T, X), I), X != 0. 
+%------------------------------------------------------------------------------%
+% Current occupancy is determined by counting the # of clients at a table %
+holds(hasoccupancy(T, K), I):- #count{Cu : holds(isattable(Cu, T), I)} = K.
+%------------------------------------------------------------------------------%
+% A table cannot have multiple occupancies %
+-holds(hasoccupancy(T, K2), I):- holds(hasoccupancy(T, K1), I), K2 != K1.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOMAIN RULES - Customer placement %%
+% If a customer is not known to be at at table then he is not %
+-holds(isattable(Cu, T), I):- not holds(isattable(Cu, T), I).
+%------------------------------------------------------------------------------%
+% A customer cannot be at two tables at once %
+-holds(isattable(Cu, T2), I):- holds(isattable(Cu, T1), I), T2 != T1.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
