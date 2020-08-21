@@ -2,7 +2,7 @@
 pick(agent, Cu1) causes {-iswaiting(Cu2), iswith(agent, Cu2)} if {aretogethere(Cu1, Cu2)} % iswaiting triggered by an observation
 impossible pick(agent, Cu) if {-currentlocation(agent, e)}
 impossible pick(agent, Cu) if {-iswaiting(Cu)}
-impossible pick(agent, Cu) if {-isfree(T) | #count{Cu2 : aretogethere(Cu1, Cu2)} > X, hascapacity(T, X), isfree(T)} %% WONT W AFTER THE OR
+impossible pick(agent, Cu) if {-isfree(T) | #count{T : #count{Cu2 : aretogethere(Cu1, Cu2)} > X, hascapacity(T, X), isfree(T)} = 0}
 %------------------------------------------------------------------------------%
 %% seat(#employee(E), #customer(Cu), #table(T)) %%
 seat(agent, Cu1, T) causes {-iswith(agent, Cu2), isattable(Cu2, T)} if {aretogethere(Cu1, Cu2)}
