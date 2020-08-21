@@ -1,0 +1,21 @@
+%% pick(#employee(E), #customer(Cu)) %%
+pick(agent, Cu1) causes {-iswaiting(Cu2), iswith(agent, Cu2)} if {aretogethere(Cu1, Cu2)} % iswaiting triggered by an observation
+impossible pick(agent, Cu) if {-currentlocation(agent, e)}
+impossible pick(agent, Cu) if {-iswaiting(Cu)}
+impossible pick(agent, Cu) if {-isfree(T) | #count{Cu2 : aretogethere(Cu1, Cu2)} > X, hascapacity(T, X), isfree(T)} %% WONT W AFTER THE OR
+%------------------------------------------------------------------------------%
+%% seat(#employee(E), #customer(Cu), #table(T)) %%
+seat(agent, Cu1, T) causes {-iswith(agent, Cu2), isattable(Cu2, T)} if {aretogethere(Cu1, Cu2)}
+impossible seat(agent, Cu, T) if {-iswith(agent, Cu)}
+impossible seat(agent, Cu, T) if {currentlocation(agent, N), -areassociated(N, T)}
+impossible seat(agent, Cu, T) if {-isfree(T)}
+impossible seat(agent, Cu1, T) if {#count{Cu2 : aretogethere(Cu1, Cu2)} > X, hascapacity(T, X)}
+%------------------------------------------------------------------------------%
+%% give_bill(#employee(E), #table(T)) %%
+give_bill(agent, T) causes {haspaid(Cu)} if {isattable(Cu, T)}
+impossible give_bill(agent, T) if {-wantsbill(T)} % wantsbill triggered by an observation
+%------------------------------------------------------------------------------%
+%% go_to(#employee(E), #node(N)) %%
+go_to(agent,N) causes currentlocation(agent,N) if {currentlocation(agent,M), N!=M}
+impossible go_to(agent,N) if {-edge(M,N), currentlocation(agent,M)}
+impossible go_to(agent,N) if {currentlocation(E,N), agent!=E}

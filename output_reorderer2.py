@@ -1,7 +1,7 @@
 import subprocess, shlex, re
 curly_brack=r'\{(.*?)\}'
 #command= 'java -jar sparc.jar restaurant_basic.sparc'
-command= 'java -jar sparc.jar restaurant_test2.sparc'
+command= 'java -jar sparc.jar restaurant_basic_v2.sparc'
 #command='java -jar sparc.jar test_newseat.sparc'
 n=int(input('How many answer sets?\n'))
 command+=' -A -n ' + str(n)
@@ -15,7 +15,6 @@ output=str(output)
 ## Splitting the output according to the different answer sets ##
 ## Each sub-list corresponds to one answer set                 ##
 output_list=re.findall(curly_brack,output)
-print(output_list)
 output_list2=[0]*n
 output_list3=[[]]*n
 exceptional_values=[[]]*n

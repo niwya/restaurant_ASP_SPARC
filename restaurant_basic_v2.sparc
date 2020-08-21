@@ -1,0 +1,154 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%% SIMPLE RESTAURANT DOMAIN %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This file, written in SPARC (a variant of ASP - Answer Set Programming)      %
+% models a simple restaurant layout, with a defined number of customers and    %
+% employees.                                                                   %
+% This domain is built for an agent to reason on, and the goal is to enable    %
+% said agent to perform simple actions (picking or seating customers, taking   %
+% orders, bringing bills and diverse items to tables) autonomously in a        %
+% restaurant.                                                                  %
+%------------------------------------------------------------------------------%
+%% CONSTANTS - All of the necessary constants %%
+% Number of steps to plan on %
+#const n = 2.
+% Maximum capacity within the tables % 
+#const maxcap = 2.
+% Total number of tables %
+#const tnum = 2.
+% Total number of customers %
+% (will be updated each time a new client enters - index = order of arrival) %
+#const cnum = 1.
+% Total number of waiters %
+#const wnum = 1.
+%------------------------------------------------------------------------------%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+sorts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#step = 0..n.
+#num = 0..maxcap.
+%------------------------------------------------------------------------------%
+#table = [table][1..tnum].
+#furniture = #table.
+%------------------------------------------------------------------------------%
+#node = {a, b, c, d, e, f, h}.
+%------------------------------------------------------------------------------%
+#customer = [c][1..cnum].
+#waiter = [w][1..wnum].
+#agent = {agent}.
+
+#person = #customer + #waiter.
+#employee = #waiter + #agent.
+%------------------------------------------------------------------------------%
+%% FLUENTS %%
+#inertial_fluent = 
+%% Customer placement %%
+                  isattable(#customer, #table)
+%% Tables occupancy %%
+                + hasoccupancy(#table, #num).
+#defined_fluent_special = 
+                  isfree(#furniture).
+
+#fluent = #inertial_fluent + #defined_fluent_special.
+%------------------------------------------------------------------------------%
+%% ACTIONS - Performed by the agent %%
+#a_go = go_to(#agent, #node(N)).                  % Move from node to node
+#a_pick = pick(#agent, #customer(Cu)).            % Pick up a (group of) customer(s)
+#a_seat = seat(#agent, #customer(Cu), #table(T)). % Seat a (group of) customer(s)
+#a_bill = give_bill(#agent, #table(T)).           % Give the bill to a table
+%------------------------------------------------------------------------------%
+%% ACTIONS - To explain what the waiters can do %%
+
+#action = #a_go + #a_pick + #a_seat + #a_bill.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+hascapacity(#table, #num).
+%------------------------------------------------------------------------------%
+edge(#node, #node).
+%------------------------------------------------------------------------------%
+aretogethere(#customer, #customer).
+%------------------------------------------------------------------------------%
+holds(#fluent, #step).
+occurs(#action, #step).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+rules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% FLUENT RULES - Inertia axiom for fluents %%
+holds(F, I+1):- #fluent(F), holds(F,I), not -holds(F, I+1).
+-holds(F, I+1):- #fluent(F), -holds(F, I), not holds(F, I+1).
+%------------------------------------------------------------------------------%
+%% ACTIONS RULES - Closed World Assumption (CWA) for actions %%
+-occurs(A,I):- not occurs(A,I).
+%------------------------------------------------------------------------------%
+%% ACTIONS RULES - Non-simultaneity of actions %%
+:- occurs(A1,I), occurs(A2,I), A1!=A2.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SIMPLE PLANNING MODULE %%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOMAIN RULES - Restaurant layout %%
+hascapacity(table1, 2).
+hascapacity(table2, 2).
+%------------------------------------------------------------------------------%
+% A table can only have one fixed capacity %
+-hascapacity(T, N):- not hascapacity(T, N).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOMAIN RULES - Pathways in the restaurant %%
+edge(a,b).
+edge(b,c).
+edge(c,d).
+edge(d,e).  
+edge(d,h).
+edge(e,f).
+edge(h,d).
+%------------------------------------------------------------------------------%
+% The edge relation is symmetric %
+edge(N2, N1):- edge(N1, N2).
+%------------------------------------------------------------------------------%
+% If it is not known that there is an edge between nodes then there is not %
+-edge(N1, N2):- not edge(N1, N2).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOMAIN RULES - Tables occupancy %%
+% A table is free by default (special CWA) %
+holds(isfree(T), I):- not -holds(isfree(T), I).
+%------------------------------------------------------------------------------%
+% A table is not free if its occupancy is not 0 %
+-holds(isfree(T), I):- holds(hasoccupancy(T, X), I), X != 0. 
+%------------------------------------------------------------------------------%
+% Current occupancy is determined by counting the # of clients at a table %
+holds(hasoccupancy(T, X), I):- #count{Cu : holds(isattable(Cu, T), I)} = X.
+%------------------------------------------------------------------------------%
+% A table cannot have multiple occupancies %
+-holds(hasoccupancy(T, X2), I):- holds(hasoccupancy(T, X1), I), X2 != X1.
+%------------------------------------------------------------------------------%
+% The occupancy of a table cannot exceed its maximum capacity %
+-holds(hasoccupancy(T, X2), I):- hascapacity(T, X1), X2 > X1. 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOMAIN RULES - Customer placement %%
+% If a customer is not known to be at at table then he is not %
+-holds(isattable(Cu, T), I):- not holds(isattable(Cu, T), I).
+%------------------------------------------------------------------------------%
+% A customer cannot be at two tables at once %
+-holds(isattable(Cu, T2), I):- holds(isattable(Cu, T1), I), T2 != T1.
+%------------------------------------------------------------------------------%
+% The aretogethere relation is symmetric, transitive and reflexive %
+aretogethere(Cu2, Cu1):- aretogethere(Cu1, Cu2), Cu2 != Cu1.
+aretogethere(Cu1, Cu3):- aretogethere(Cu1, Cu2), aretogethere(Cu2, Cu3), Cu1 != Cu2, Cu2 != Cu3.
+aretogethere(Cu, Cu).
+%------------------------------------------------------------------------------%
+% If two clients are not known to be togethere then they are not %
+-aretogethere(Cu1, Cu2):- not aretogethere(Cu1, Cu2), Cu2 != Cu1.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ACTIONS - Causal laws %%
+% go_to(#employee, #node) %
+% pick(#employee, #customer) %
+% seat(#employee, #customer, #table) %
+% give_bill(#table) %
+%------------------------------------------------------------------------------%
+%% ACTIONS - Executability conditions %%
+% go_to(#employee, #node) %
+% pick(#employee, #customer) %
+% seat(#employee, #customer, #table) %
+% give_bill(#table) %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% OBSERVATIONS %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
