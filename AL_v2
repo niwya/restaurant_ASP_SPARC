@@ -13,9 +13,12 @@ impossible seat(agent, Cu1, T) if {#count{Cu2 : aretogethere(Cu1, Cu2)} > X, has
 %------------------------------------------------------------------------------%
 %% give_bill(#employee(E), #table(T)) %%
 give_bill(agent, T) causes {haspaid(Cu)} if {isattable(Cu, T)}
-impossible give_bill(agent, T) if {-wantsbill(T)} % wantsbill triggered by an observation
+impossible give_bill(agent, T) if {-wantsbill(T)} % wantsbill triggered by an observation (defined fluent maybe??)
 %------------------------------------------------------------------------------%
 %% go_to(#employee(E), #node(N)) %%
 go_to(agent,N) causes currentlocation(agent,N) if {currentlocation(agent,M), N!=M}
 impossible go_to(agent,N) if {-edge(M,N), currentlocation(agent,M)}
 impossible go_to(agent,N) if {currentlocation(E,N), agent!=E}
+
+
+REALITY CHECK AXIOM TO ADD 
