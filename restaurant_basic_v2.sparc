@@ -55,6 +55,8 @@ sorts
 #defined_fluent_special = 
                   isfree(#furniture).
 
+#observable_fluent = bill_wave(#table).
+
 #fluent = #inertial_fluent + #defined_fluent_special.
 %------------------------------------------------------------------------------%
 %% ACTIONS - Performed by the agent %%
@@ -88,8 +90,8 @@ something_happened(#step).
 rules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% FLUENT RULES - Inertia axiom for fluents %%
-holds(F, I+1):- #fluent(F), holds(F,I), not -holds(F, I+1).
--holds(F, I+1):- #fluent(F), -holds(F, I), not holds(F, I+1).
+holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
+-holds(F, I+1):- #inertial_fluent(F), -holds(F, I), not holds(F, I+1).
 %------------------------------------------------------------------------------%
 %% ACTIONS RULES - Closed World Assumption (CWA) for actions %%
 -occurs(A,I):- not occurs(A,I).
@@ -127,9 +129,11 @@ goal(I):- holds(isattable(c1, table1), I).
 %% INITIAL SITUATION %%
 holds(currentlocation(agent, e), 0).
 holds(currentlocation(w1, a), 0).
+holds(isattable(c1, table1), 0).
+holds(isattable(c2, table1), 0).
 %holds(iswaiting(c1), 0).
-holds(iswith(agent, c1), 0).
-holds(iswaiting(c2), 0).
+%holds(iswith(agent, c1), 0).
+%holds(iswaiting(c2), 0).
 aretogethere(c1, c2).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DOMAIN RULES - Restaurant layout %%
@@ -218,8 +222,7 @@ aretogethere(Cu, Cu).
 -holds(wantsbill(T), I):- not holds(wantsbill(T), I).
 %------------------------------------------------------------------------------%
 % Observing a bill_wave triggers the wantsbill state %
-
-
+holds(wantsbill(T), I):- obs(bill_wave(T), true, I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ACTIONS - Causal laws %%
 % go_to(#agent, #node) %
