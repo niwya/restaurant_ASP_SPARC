@@ -48,26 +48,29 @@ sorts
                 + iswith(#agent, #customer)
                 + isattable(#customer, #table)
                 + haspaid(#customer)
-%% Tables occupancy %%
-                + hasoccupancy(#table, #num)
 %% Payment %%
                 + wantsbill(#table).
 #defined_fluent_special = 
                   isfree(#furniture).
 
-#observable_fluent = bill_wave(#table).
+#defined_fluent = 
+%% Tables occupancy %%
+                   hasoccupancy(#table, #num).
 
-#fluent = #inertial_fluent + #defined_fluent_special.
+#observable = bill_wave(#table).
+
+#fluent = #inertial_fluent + #defined_fluent_special + #defined_fluent.
 %------------------------------------------------------------------------------%
 %% ACTIONS - Performed by the agent %%
 #a_go = go_to(#agent(A), #node(N)).                  % Move from node to node
 #a_pick = pick(#agent(A), #customer(Cu)).            % Pick up a (group of) customer(s)
 #a_seat = seat(#agent(A), #customer(Cu), #table(T)). % Seat a (group of) customer(s)
 #a_bill = give_bill(#agent(A), #table(T)).           % Give the bill to a table
+
+#action = #a_go + #a_pick + #a_seat + #a_bill.
 %------------------------------------------------------------------------------%
 %% ACTIONS - To explain what the waiters can do %%
 
-#action = #a_go + #a_pick + #a_seat + #a_bill.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -81,7 +84,7 @@ aretogethere(#customer, #customer).
 holds(#fluent, #step).
 occurs(#action, #step).
 %------------------------------------------------------------------------------%
-obs(#fluent, #boolean, #step).
+obs(#observable, #boolean, #step).
 %------------------------------------------------------------------------------%
 goal(#step).
 success().
@@ -92,6 +95,9 @@ rules
 %% FLUENT RULES - Inertia axiom for fluents %%
 holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 -holds(F, I+1):- #inertial_fluent(F), -holds(F, I), not holds(F, I+1).
+%------------------------------------------------------------------------------%
+%% FLUENT RULES - Closed World Assumption (CWA) for defined fluents %%
+-holds(F, I):- not holds(F, I).
 %------------------------------------------------------------------------------%
 %% ACTIONS RULES - Closed World Assumption (CWA) for actions %%
 -occurs(A,I):- not occurs(A,I).
@@ -114,14 +120,16 @@ something_happened(I):- occurs(A,I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% GOALS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %b_goal
 %goal(I):- holds(iswith(agent,c1),I).
-goal(I):- holds(isattable(c1, table1), I).
+%goal(I):- holds(isattable(c1, table1), I).
 %goal(I):- -holds(isfree(table1), I).
+goal(I):- holds(haspaid(c1), I).
 %e_goal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------------%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%% OBSERVATIONS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%
 %b_obs
+obs(bill_wave(table1), true, 1).
 %e_obs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------------%
@@ -194,7 +202,7 @@ holds(isfree(T), I):- not -holds(isfree(T), I).
 -holds(isfree(T), I):- holds(hasoccupancy(T, X), I), X != 0. 
 %------------------------------------------------------------------------------%
 % Current occupancy is determined by counting the # of clients at a table %
-holds(hasoccupancy(T, X), I):- #count{Cu : holds(isattable(Cu, T), I)} = X.
+holds(hasoccupancy(T, X), I):- X = #count{Cu : holds(isattable(Cu, T), I)}.
 %------------------------------------------------------------------------------%
 % A table cannot have multiple occupancies %
 -holds(hasoccupancy(T, X2), I):- holds(hasoccupancy(T, X1), I), X2 != X1.
