@@ -261,6 +261,8 @@ holds(haspaid(Cu2), I+1):- occurs(give_bill(agent, T), I), holds(isattable(Cu1, 
 %-occurs(seat(agent, Cu2, T), I):- hascapacity(T, X), X < #count{Cu1 : aretogethere(Cu1, Cu2)}.
 % give_bill(#table) %
 -occurs(give_bill(agent, T), I):- -holds(wantsbill(T), I).
+-occurs(give_bill(agent, T), I):- holds(isfree(T), I).
+-occurs(give_bill(agent, T), I):- holds(currentlocation(agent, N), I), -areassociated(N, T).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% OBSERVATIONS %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
