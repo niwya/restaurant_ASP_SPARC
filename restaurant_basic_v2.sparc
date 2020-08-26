@@ -57,7 +57,8 @@ sorts
 %% Tables occupancy %%
                    hasoccupancy(#table, #num).
 
-#observable = bill_wave(#table).
+#observable =      bill_wave(#table)
+                 + has_entered(#customer).
 
 #fluent = #inertial_fluent + #defined_fluent_special + #defined_fluent.
 %------------------------------------------------------------------------------%
@@ -130,6 +131,7 @@ goal(I):- holds(haspaid(c1), I).
 %%%%%%%%%%%%%%%%%%%%%%%%% OBSERVATIONS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%
 %b_obs
 obs(bill_wave(table1), true, 1).
+obs(has_entered(c2), true, 0).
 %e_obs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------------%
@@ -138,11 +140,11 @@ obs(bill_wave(table1), true, 1).
 holds(currentlocation(agent, e), 0).
 holds(currentlocation(w1, a), 0).
 holds(isattable(c1, table1), 0).
-holds(isattable(c2, table1), 0).
+%holds(isattable(c2, table1), 0).
 %holds(iswaiting(c1), 0).
 %holds(iswith(agent, c1), 0).
 %holds(iswaiting(c2), 0).
-aretogethere(c1, c2).
+%aretogethere(c1, c2).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DOMAIN RULES - Restaurant layout %%
 hascapacity(table1, 2).
@@ -228,9 +230,6 @@ aretogethere(Cu, Cu).
 %% DOMAIN RULES - Payment %%
 % By default, a table does not want the bill %%
 -holds(wantsbill(T), I):- not holds(wantsbill(T), I).
-%------------------------------------------------------------------------------%
-% Observing a bill_wave triggers the wantsbill state %
-holds(wantsbill(T), I):- obs(bill_wave(T), true, I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ACTIONS - Causal laws %%
 % go_to(#agent, #node) %
@@ -266,3 +265,9 @@ holds(haspaid(Cu2), I+1):- occurs(give_bill(agent, T), I), holds(isattable(Cu1, 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% OBSERVATIONS %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Observing a bill_wave triggers the wantsbill state %
+holds(wantsbill(T), I):- obs(bill_wave(T), true, I).
+%------------------------------------------------------------------------------%
+% Entering the restaurant triggers the iswaiting fluent %
+holds(iswaiting(Cu), I):- obs(has_entered(Cu), true, I).
+%------------------------------------------------------------------------------%
