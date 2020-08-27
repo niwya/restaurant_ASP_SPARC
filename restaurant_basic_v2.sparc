@@ -9,14 +9,14 @@
 %------------------------------------------------------------------------------%
 %% CONSTANTS - All of the necessary constants %%
 % Number of steps to plan on %
-#const n = 2.
+#const n = 3.
 % Maximum capacity within the tables % 
-#const maxcap = 2.
+#const maxcap = 4.
 % Total number of tables %
 #const tnum = 2.
 % Total number of customers %
 % (will be updated each time a new client enters - index = order of arrival) %
-#const cnum = 2.
+#const cnum = 3.
 % Total number of waiters %
 #const wnum = 1.
 %------------------------------------------------------------------------------%
@@ -121,17 +121,18 @@ something_happened(I):- occurs(A,I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% GOALS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %b_goal
 %goal(I):- holds(iswith(agent,c1),I).
-%goal(I):- holds(isattable(c1, table1), I).
+goal(I):- holds(isattable(c1, T), I).
 %goal(I):- -holds(isfree(table1), I).
-goal(I):- holds(haspaid(c1), I).
+%goal(I):- holds(haspaid(c1), I).
 %e_goal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------------%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%% OBSERVATIONS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%
 %b_obs
-obs(bill_wave(table1), true, 1).
+obs(has_entered(c1), true, 0).
 obs(has_entered(c2), true, 0).
+obs(has_entered(c3), true, 0).
 %e_obs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------------%
@@ -139,16 +140,15 @@ obs(has_entered(c2), true, 0).
 %% INITIAL SITUATION %%
 holds(currentlocation(agent, e), 0).
 holds(currentlocation(w1, a), 0).
-holds(isattable(c1, table1), 0).
+%holds(isattable(c1, table1), 0).
 %holds(isattable(c2, table1), 0).
-%holds(iswaiting(c1), 0).
 %holds(iswith(agent, c1), 0).
-%holds(iswaiting(c2), 0).
-%aretogethere(c1, c2).
+aretogethere(c1, c2).
+aretogethere(c1, c3).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DOMAIN RULES - Restaurant layout %%
 hascapacity(table1, 2).
-hascapacity(table2, 2).
+hascapacity(table2, 4).
 %------------------------------------------------------------------------------%
 % A table can only have one fixed capacity %
 -hascapacity(T, N):- not hascapacity(T, N).
@@ -210,7 +210,10 @@ holds(hasoccupancy(T, X), I):- X = #count{Cu : holds(isattable(Cu, T), I)}.
 -holds(hasoccupancy(T, X2), I):- holds(hasoccupancy(T, X1), I), X2 != X1.
 %------------------------------------------------------------------------------%
 % The occupancy of a table cannot exceed its maximum capacity %
--holds(hasoccupancy(T, X2), I):- hascapacity(T, X1), X2 > X1. 
+-holds(hasoccupancy(T, X2), I):- hascapacity(T, X1), X2 > X1.
+%------------------------------------------------------------------------------%
+% If there is no one at a table, the table cannot be occupied %
+holds(isfree(T), I):- -holds(isattable(Cu, T), I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DOMAIN RULES - Customer placement %%
 % If a customer is not known to be at at table then he is not %
@@ -257,7 +260,6 @@ holds(haspaid(Cu2), I+1):- occurs(give_bill(agent, T), I), holds(isattable(Cu1, 
 -occurs(seat(agent, Cu, T), I):- -holds(iswith(agent, Cu), I).
 -occurs(seat(agent, Cu, T), I):- holds(currentlocation(agent, N), I), -areassociated(N, T).
 -occurs(seat(agent, Cu, T), I):- -holds(isfree(T), I).
-%-occurs(seat(agent, Cu2, T), I):- hascapacity(T, X), X < #count{Cu1 : aretogethere(Cu1, Cu2)}.
 % give_bill(#table) %
 -occurs(give_bill(agent, T), I):- -holds(wantsbill(T), I).
 -occurs(give_bill(agent, T), I):- holds(isfree(T), I).

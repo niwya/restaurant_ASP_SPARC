@@ -9,7 +9,7 @@ seat(agent, Cu1, T) causes {-iswith(agent, Cu2), isattable(Cu2, T)} if {aretoget
 impossible seat(agent, Cu, T) if {-iswith(agent, Cu)}
 impossible seat(agent, Cu, T) if {currentlocation(agent, N), -areassociated(N, T)}
 impossible seat(agent, Cu, T) if {-isfree(T)}
-impossible seat(agent, Cu1, T) if {#count{Cu2 : aretogethere(Cu1, Cu2)} > X, hascapacity(T, X)}
+% impossible seat(agent, Cu1, T) if {#count{Cu2 : aretogethere(Cu1, Cu2)} > X, hascapacity(T, X)} => coded directly as a constraint on fluents
 %------------------------------------------------------------------------------%
 %% give_bill(#employee(E), #table(T)) %%
 give_bill(agent, T) causes {haspaid(Cu)} if {isattable(Cu, T)}
