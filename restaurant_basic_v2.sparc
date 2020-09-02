@@ -136,15 +136,13 @@ obs(has_entered(c3), true, 0).
 %e_obs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------------%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% INITIAL SITUATION %%
+%%%%%%%%%%%%%%%%%%%%%% INITIAL SITUATION TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%
+%b_init
 holds(currentlocation(agent, e), 0).
 holds(currentlocation(w1, a), 0).
-%holds(isattable(c1, table1), 0).
-%holds(isattable(c2, table1), 0).
-%holds(iswith(agent, c1), 0).
 aretogethere(c1, c2).
 aretogethere(c1, c3).
+%e_init
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DOMAIN RULES - Restaurant layout %%
 hascapacity(table1, 2).
@@ -249,13 +247,13 @@ holds(haspaid(Cu2), I+1):- occurs(give_bill(agent, T), I), holds(isattable(Cu1, 
 %% ACTIONS - Executability conditions %%
 % go_to(#agent, #node) %
 -occurs(go_to(agent, N), I):- holds(currentlocation(agent, M), I), -edge(M, N).
--occurs(go_to(agent, N), I):- holds(currentlocation(E, N), I), E != agent.
+-occurs(go_to(agent, N), I):- holds(currentlocation(E, N), I).
 % pick(#agent, #customer) %
 -occurs(pick(agent, Cu), I):- -holds(currentlocation(agent, e), I).
 -occurs(pick(agent, Cu), I):- -holds(iswaiting(Cu), I).
 -occurs(pick(agent, Cu), I):- -holds(isfree(T), I).
 %-occurs(pick(agent, Cu), I):- V = #count{Cu2 : aretogethere(Cu1, Cu2)}, #count{T : holds(isfree(T), I), hascapacity(T, V)} = 0.
-%% cant figure out how to include checking tables w capacity >= to size of party (only =) so commented line
+%% cant figure out how to include checking tables w capacity >= to size of party (only =) so commented line => Cu in head and not in body, 2 equals, some other pb
 % seat(#agent, #customer, #table) %
 -occurs(seat(agent, Cu, T), I):- -holds(iswith(agent, Cu), I).
 -occurs(seat(agent, Cu, T), I):- holds(currentlocation(agent, N), I), -areassociated(N, T).
