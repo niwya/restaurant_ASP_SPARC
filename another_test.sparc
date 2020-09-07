@@ -1,22 +1,15 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%% SIMPLE RESTAURANT DOMAIN %%%%%%%%%%%%%%%%%%%%%%%%%%%
-% This file, written in SPARC (a variant of ASP - Answer Set Programming)      %
-% models a simple restaurant layout, with a defined number of customers and    %
-% employees.                                                                   %
-% This domain is built for an agent to reason on, and the goal is to enable    %
-% said agent to perform simple actions (picking or seating customers, taking   %
-% orders, bringing bills and diverse items to tables) autonomously in a        %
-% restaurant.                                                                  %
+
 %------------------------------------------------------------------------------%
 %% CONSTANTS - All of the necessary constants %%
 % Number of steps to plan on %
-#const n = 3.
+#const n = 4.
 % Maximum capacity within the tables % 
-#const maxcap = 4.
+#const maxcap = 2.
 % Total number of tables %
 #const tnum = 2.
 % Total number of customers %
 % (will be updated each time a new client enters - index = order of arrival) %
-#const cnum = 3.
+#const cnum = 2.
 % Total number of waiters %
 #const wnum = 1.
 %------------------------------------------------------------------------------%
@@ -97,8 +90,8 @@ rules
 holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 -holds(F, I+1):- #inertial_fluent(F), -holds(F, I), not holds(F, I+1).
 %------------------------------------------------------------------------------%
-%% FLUENT RULES - Closed World Assumption (CWA) for defined fluents %%
--holds(F, I):- not holds(F, I).
+%% FLUENT RULES - Closed World Assumption (CWA) for inertial fluents %%
+-holds(F, I):- not holds(F, I), #inertial_fluent(F).
 %------------------------------------------------------------------------------%
 %% ACTIONS RULES - Closed World Assumption (CWA) for actions %%
 -occurs(A,I):- not occurs(A,I).
@@ -120,36 +113,30 @@ something_happened(I):- occurs(A,I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% GOALS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %b_goal
-%goal(I):- holds(iswith(agent,c1),I).
-goal(I):- holds(isattable(c1, T), I).
-%goal(I):- -holds(isfree(table1), I).
-%goal(I):- holds(haspaid(c1), I).
+goal(1):- holds(currentlocation(agent, e), 1).
 %e_goal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------------%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%% OBSERVATIONS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%
 %b_obs
-obs(has_entered(c1), true, 0).
-%obs(has_entered(c2), true, 0).
-%obs(has_entered(c3), true, 0).
 %e_obs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %------------------------------------------------------------------------------%
 %%%%%%%%%%%%%%%%%%%%%% INITIAL SITUATION TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%
+% Fluent initial situation - Can be updated/modified %
 %b_init
-holds(currentlocation(agent, e), 0).
+holds(currentlocation(agent, d), 0).
 holds(currentlocation(w1, a), 0).
 %e_init
-aretogethere(c1, c2).
-aretogethere(c1, c3).
+
+% Static initial situation %
+hascapacity(table1, 1).
+hascapacity(table2, 2).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DOMAIN RULES - Restaurant layout %%
-hascapacity(table1, 2).
-hascapacity(table2, 4).
-%------------------------------------------------------------------------------%
 % A table can only have one fixed capacity %
--hascapacity(T, N):- not hascapacity(T, N).
+%-hascapacity(T, N):- not hascapacity(T, N).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DOMAIN RULES - Pathways in the restaurant %%
 edge(a,b).
@@ -167,113 +154,70 @@ edge(N2, N1):- edge(N1, N2).
 -edge(N1, N2):- not edge(N1, N2).
 %------------------------------------------------------------------------------%
 %% DOMAIN RULES - Node/furniture association %%
-areassociated(f,table1).
-areassociated(f,table2).
-areassociated(h,table2).
+%areassociated(f,table1).
+%areassociated(f,table2).
+%areassociated(h,table2).
 %------------------------------------------------------------------------------%
 % Two nodes that do not seem to be associated with a piece of furniture are not %
--areassociated(N, F):- not areassociated(N, F).
+%-areassociated(N, F):- not areassociated(N, F).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DOMAIN RULES - Locations of employees in the restaurant %%
-% Two employees cannot share the same location %
--holds(currentlocation(E2, N), I):- holds(currentlocation(E1, N), I), E2 != E1.
-%------------------------------------------------------------------------------%
 % If an employee is not known to be at a certain location, then he is not %
 -holds(currentlocation(E, N), I):- not holds(currentlocation(E, N), I).
+%------------------------------------------------------------------------------%
+% Two employees cannot share the same location %
+-holds(currentlocation(E2, N), I):- holds(currentlocation(E1, N), I), E2 != E1.
 %------------------------------------------------------------------------------%
 % An employee can only have one current location at a time %
 -holds(currentlocation(E, N2), I):- holds(currentlocation(E, N1), I), N2 != N1.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DOMAIN RULES - Waiting to be seated %
-% A customer cannot be with the agent and waiting at the same time %
--holds(iswaiting(Cu), I):- holds(iswith(agent, Cu), I).
-%------------------------------------------------------------------------------%
-% A customer cannot be at at table and waiting at the same time %
--holds(iswaiting(Cu), I):- holds(isattable(Cu, T), I).
-%------------------------------------------------------------------------------%
 % The agent cannot manage two groups at once %
--holds(iswith(agent, Cu2), I):- holds(iswith(agent, Cu1), I), -aretogethere(Cu1, Cu2).
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% DOMAIN RULES - Tables occupancy %%
-% A table is free by default (special CWA) %
-holds(isfree(T), I):- not -holds(isfree(T), I).
-%------------------------------------------------------------------------------%
-% A table is not free if its occupancy is not 0 %
--holds(isfree(T), I):- holds(hasoccupancy(T, X), I), X != 0. 
-%------------------------------------------------------------------------------%
-% Current occupancy is determined by counting the # of clients at a table %
-holds(hasoccupancy(T, X), I):- X = #count{Cu : holds(isattable(Cu, T), I)}.
-%------------------------------------------------------------------------------%
-% A table cannot have multiple occupancies %
--holds(hasoccupancy(T, X2), I):- holds(hasoccupancy(T, X1), I), X2 != X1.
-%------------------------------------------------------------------------------%
-% The occupancy of a table cannot exceed its maximum capacity %
--holds(hasoccupancy(T, X2), I):- hascapacity(T, X1), X2 > X1.
-%------------------------------------------------------------------------------%
-% If there is no one at a table, the table cannot be occupied %
-holds(isfree(T), I):- -holds(isattable(Cu, T), I).
+%-holds(iswith(agent, Cu2), I):- holds(iswith(agent, Cu1), I), -aretogethere(Cu1, Cu2).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DOMAIN RULES - Customer placement %%
 % If a customer is not known to be at at table then he is not %
--holds(isattable(Cu, T), I):- not holds(isattable(Cu, T), I).
+%-holds(isattable(Cu, T), I):- not holds(isattable(Cu, T), I).
 %------------------------------------------------------------------------------%
 % A customer cannot be at two tables at once %
--holds(isattable(Cu, T2), I):- holds(isattable(Cu, T1), I), T2 != T1.
-%------------------------------------------------------------------------------%
+%-holds(isattable(Cu, T2), I):- holds(isattable(Cu, T1), I), T2 != T1.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOMAIN RULES - Groups management %%
 % The aretogethere relation is symmetric, transitive and reflexive %
-aretogethere(Cu2, Cu1):- aretogethere(Cu1, Cu2).
-aretogethere(Cu1, Cu3):- aretogethere(Cu1, Cu2), aretogethere(Cu2, Cu3).
-aretogethere(Cu, Cu).
+%aretogethere(Cu2, Cu1):- aretogethere(Cu1, Cu2).
+%aretogethere(Cu1, Cu3):- aretogethere(Cu1, Cu2), aretogethere(Cu2, Cu3).
+%aretogethere(Cu, Cu).
 %------------------------------------------------------------------------------%
 % If two clients are not known to be togethere then they are not %
--aretogethere(Cu1, Cu2):- not aretogethere(Cu1, Cu2), Cu2 != Cu1.
+%-aretogethere(Cu1, Cu2):- not aretogethere(Cu1, Cu2), Cu2 != Cu1.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% DOMAIN RULES - Payment %%
-% By default, a table does not want the bill %%
--holds(wantsbill(T), I):- not holds(wantsbill(T), I).
+%% DOMAIN RULES - Tables occupancy %%
+% Current occupancy is determined by counting the # of clients at a table %
+%holds(hasoccupancy(T, X), I):- X = #count{Cu : holds(isattable(Cu, T), I)}.
+%------------------------------------------------------------------------------%
+% A table is not free if its occupancy is not 0 %
+%-holds(isfree(T), I):- holds(hasoccupancy(T, X), I), X != 0. 
+%------------------------------------------------------------------------------%
+% A table is free if its occupancy is 0 %
+%holds(isfree(T), I):- holds(hasoccupancy(T, X), I), X=0.
+%------------------------------------------------------------------------------%
+% A table cannot have multiple occupancies %
+%-holds(hasoccupancy(T, X2), I):- holds(hasoccupancy(T, X1), I), X2 != X1.
+%------------------------------------------------------------------------------%
+% The occupancy of a table cannot exceed its maximum capacity %
+%-holds(hasoccupancy(T, X2), I):- hascapacity(T, X1), X2 > X1.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ACTIONS - Causal laws %%
 % go_to(#agent, #node) %
-holds(currentlocation(agent, N), I+1):- occurs(go_to(agent, N), I), holds(currentlocation(agent, M), I), N != M.
-% pick(#agent, #customer) %
--holds(iswaiting(Cu2), I+1):- occurs(pick(agent, Cu1), I), aretogethere(Cu1, Cu2).
-holds(iswith(agent, Cu2), I+1):- occurs(pick(agent, Cu1), I), aretogethere(Cu1, Cu2).
-% seat(#agent, #customer, #table) %
-holds(isattable(Cu2, T), I+1):- occurs(seat(agent, Cu1, T), I), aretogethere(Cu1, Cu2).
--holds(iswith(agent, Cu2), I+1):- occurs(seat(agent, Cu1, T), I), aretogethere(Cu1, Cu2).
-% give_bill(#table) %
-holds(haspaid(Cu2), I+1):- occurs(give_bill(agent, T), I), holds(isattable(Cu1, T), I), aretogethere(Cu1, Cu2).
+holds(currentlocation(agent, N), I+1):- occurs(go_to(agent, N), I).
 %------------------------------------------------------------------------------%
 %% ACTIONS - Executability conditions %%
 % go_to(#agent, #node) %
 -occurs(go_to(agent, N), I):- holds(currentlocation(agent, M), I), -edge(M, N).
--occurs(go_to(agent, N), I):- holds(currentlocation(E, N), I).
-% pick(#agent, #customer) %
--occurs(pick(agent, Cu), I):- -holds(currentlocation(agent, e), I).
--occurs(pick(agent, Cu), I):- -holds(iswaiting(Cu), I).
--occurs(pick(agent, Cu), I):- -holds(isfree(T), I).
-%-occurs(pick(agent, Cu), I):- V = #count{Cu2 : aretogethere(Cu1, Cu2)}, #count{T : holds(isfree(T), I), hascapacity(T, V)} = 0.
-%% cant figure out how to include checking tables w capacity >= to size of party (only =) so commented line => Cu in head and not in body, 2 equals, some other pb
-% seat(#agent, #customer, #table) %
--occurs(seat(agent, Cu, T), I):- -holds(iswith(agent, Cu), I).
--occurs(seat(agent, Cu, T), I):- holds(currentlocation(agent, N), I), -areassociated(N, T).
--occurs(seat(agent, Cu, T), I):- -holds(isfree(T), I).
-% give_bill(#table) %
--occurs(give_bill(agent, T), I):- -holds(wantsbill(T), I).
--occurs(give_bill(agent, T), I):- holds(isfree(T), I).
--occurs(give_bill(agent, T), I):- holds(currentlocation(agent, N), I), -areassociated(N, T).
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% OBSERVATIONS %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Observing a bill_wave triggers the wantsbill state %
-holds(wantsbill(T), I):- obs(bill_wave(T), true, I).
-%------------------------------------------------------------------------------%
-% Entering the restaurant triggers the iswaiting fluent %
-holds(iswaiting(Cu), I):- obs(has_entered(Cu), true, I).
-%------------------------------------------------------------------------------%
+-occurs(go_to(agent, N), I):- holds(currentlocation(E, N), I), #waiter(E).
 
-% What is wrong as of now:
-% agent disappears (i.e. has no currentlocation anymore) whenever he attains goal/end the moving actions
-% declared clients HAVE to be togethere otherwise you cannot do anything (I am assuming that pick/seat actions are wrong since they use aretogethere)
-% can seat any client from wherever in the restaurant once iswith but there are rules supposedly preventing that 
-% might be a shitton of other issues that I am unable to correct
+% Rules to try to force the agent to have a location
+%:- holds(currentlocation(agent, N1), I), -holds(currentlocation(agent, N2), I+1).
+%holds(currentlocation(agent, N), I+1):- -occurs(go_to(agent, M), I), holds(currentlocation(agent, N), I).
