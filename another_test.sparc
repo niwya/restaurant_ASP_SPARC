@@ -61,7 +61,7 @@ sorts
 #a_seat = seat(#agent(A), #customer(Cu), #table(T)). % Seat a (group of) customer(s)
 #a_bill = give_bill(#agent(A), #table(T)).           % Give the bill to a table
 
-#action = #a_go + #a_pick + #a_seat + #a_bill.
+#action = #a_go.
 %------------------------------------------------------------------------------%
 %% ACTIONS - To explain what the waiters can do %%
 
