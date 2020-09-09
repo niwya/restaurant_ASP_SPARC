@@ -212,6 +212,7 @@ edge(N2, N1):- edge(N1, N2).
 %% ACTIONS - Causal laws %%
 % go_to(#agent, #node) %
 holds(currentlocation(agent, N), I+1):- occurs(go_to(agent, N), I).
+-holds(currentlocation(agent, M), I+1):- occurs(go_to(agent, N), I), M !=N.
 %------------------------------------------------------------------------------%
 %% ACTIONS - Executability conditions %%
 % go_to(#agent, #node) %
@@ -219,5 +220,5 @@ holds(currentlocation(agent, N), I+1):- occurs(go_to(agent, N), I).
 -occurs(go_to(agent, N), I):- holds(currentlocation(E, N), I), #waiter(E).
 
 % Rules to try to force the agent to have a location
-%:- holds(currentlocation(agent, N1), I), -holds(currentlocation(agent, N2), I+1).
+:- occurs(go_to(agent, N), I),  -holds(currentlocation(E, N), I+1).
 %holds(currentlocation(agent, N), I+1):- -occurs(go_to(agent, M), I), holds(currentlocation(agent, N), I).
