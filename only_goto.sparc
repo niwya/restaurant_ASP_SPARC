@@ -95,11 +95,6 @@ holds(currentlocation(agent, N), I+1):- occurs(go_to(agent, N), I).
 %% ACTIONS - Executability conditions %%
 % go_to(#agent, #node) %
 -occurs(go_to(agent, N), I):- holds(currentlocation(agent, M), I), -edge(M, N).
--occurs(go_to(agent, N), I):- holds(currentlocation(E, N), I), #waiter(E).
+-occurs(go_to(agent, N), I):- holds(currentlocation(agent, N), I).
 
 goal(1):- holds(currentlocation(agent, e), 1).
-
-
-% Rules to try to force the agent to have a location
-%:- occurs(go_to(agent, N), I),  -holds(currentlocation(E, N), I+1).
-%holds(currentlocation(agent, N), I+1):- -occurs(go_to(agent, M), I), holds(currentlocation(agent, N), I).
