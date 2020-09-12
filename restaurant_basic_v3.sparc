@@ -1,17 +1,41 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%% SIMPLE RESTAURANT DOMAIN %%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This file, written in SPARC (a variant of ASP - Answer Set Programming)      %
+% models a simple restaurant layout, with a defined number of customers and    %
+% employees.                                                                   %
+% This domain is built for an agent to reason on, and the goal is to enable    %
+% said agent to perform simple actions (picking or seating customers, taking   %
+% orders, bringing bills and diverse items to tables) autonomously in a        %
+% restaurant.                                                                  %
 %------------------------------------------------------------------------------%
 %% CONSTANTS - All of the necessary constants %%
+
 % Number of steps to plan on %
-#const n = 4.
+#const nstep = 5.
+
 % Total number of waiters %
 #const wnum = 1.
+% Total number of customers - Must be incremented each time a new customer enters the restaurant %
+#const cnum = 2.
+% Total number of tables %
 #const tnum = 2.
+% Maximum capacity within the tables %
+#const maxcap =4.
+% Total number of nodes %
+#const nnum = 7.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 sorts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SORTS - all the types declaration %%
+#step = 0..nstep.
 
-#step = 0..n.
+#num = 0..maxcap.
 
-#node = {a, b, c, d, e, f, h}.
+#boolean = {true, false}.
 
+#node = [n][0..nnum].
+
+#customer = [c][1..cnum].
 #waiter = [w][1..wnum].
 #agent = {agent}.
 #employee = #waiter + #agent.
@@ -42,7 +66,7 @@ holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 -holds(F, I+1):- #inertial_fluent(F), -holds(F, I), not holds(F, I+1).
 %------------------------------------------------------------------------------%
 %% FLUENT RULES - Closed World Assumption (CWA) for inertial fluents %%
-%-holds(F, I):- not holds(F, I), #inertial_fluent(F).
+% -holds(F, I):- not holds(F, I), #inertial_fluent(F).
 %------------------------------------------------------------------------------%
 %% ACTIONS RULES - Closed World Assumption (CWA) for actions %%
 -occurs(A,I):- not occurs(A,I).
@@ -51,24 +75,15 @@ holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 :- occurs(A1,I), occurs(A2,I), A1!=A2.
 %------------------------------------------------------------------------------%
 
-%% SIMPLE PLANNING MODULE %%
-success:- goal(I).
-:- not success.
-occurs(A,I) | -occurs(A,I) :- not goal(I).
-something_happened(I):- occurs(A,I).
-:- goal(I), not goal(I-1), J<I, not something_happened(J).
-
-holds(currentlocation(agent, d), 0).
-holds(currentlocation(w1, a), 0).
 
 %% DOMAIN RULES - Pathways in the restaurant %%
-edge(a,b).
-edge(b,c).
-edge(c,d).
-edge(d,e).  
-edge(d,h).
-edge(e,f).
-edge(h,d).
+edge(n1, n2).
+edge(n2, n3).
+edge(n3, n4).
+edge(n4, n5).  
+edge(n4, n7).
+edge(n5, n6).
+edge(n5, n0).
 %------------------------------------------------------------------------------%
 % The edge relation is symmetric %
 edge(N2, N1):- edge(N1, N2).
@@ -78,9 +93,7 @@ edge(N2, N1):- edge(N1, N2).
 %------------------------------------------------------------------------------%
 
 %% DOMAIN RULES - Locations of employees in the restaurant %%
-% If an employee is not known to be at a certain location, then he is not %
--holds(currentlocation(E, N), I):- not holds(currentlocation(E, N), I).
-%------------------------------------------------------------------------------%
+
 % Two employees cannot share the same location %
 -holds(currentlocation(E2, N), I):- holds(currentlocation(E1, N), I), E2 != E1.
 %------------------------------------------------------------------------------%
@@ -95,6 +108,23 @@ holds(currentlocation(agent, N), I+1):- occurs(go_to(agent, N), I).
 %% ACTIONS - Executability conditions %%
 % go_to(#agent, #node) %
 -occurs(go_to(agent, N), I):- holds(currentlocation(agent, M), I), -edge(M, N).
--occurs(go_to(agent, N), I):- holds(currentlocation(E, N), I).
+-occurs(go_to(agent, N), I):- holds(currentlocation(E, N), I), #waiter(E).
+-occurs(go_to(agent, N), I):- holds(currentlocation(agent, N), I).
 
-goal(I):- holds(currentlocation(agent, d), I).
+
+%% SIMPLE PLANNING MODULE %%
+success:- goal(I), I <= nstep.
+:- not success.
+occurs(A,I) | -occurs(A,I) :- not goal(I).
+something_happened(I):- occurs(A,I).
+
+% Keep executing actions until goal is achieved...
+%:- goal(I), not goal(I-1), J<I, not something_happened(J).
+:- not goal(I), not something_happened(I).
+
+
+%% Goal and initial conditions
+goal(I):- holds(currentlocation(agent, n0), I).
+
+holds(currentlocation(agent, n6), 0).
+holds(currentlocation(w1, n1), 0).
