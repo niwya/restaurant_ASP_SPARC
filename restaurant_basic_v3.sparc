@@ -10,7 +10,7 @@
 %% CONSTANTS - All of the necessary constants %%
 
 % Number of steps to plan on %
-#const nstep = 5.
+#const nstep = 2.
 
 % Total number of waiters %
 #const wnum = 1.
@@ -35,22 +35,47 @@ sorts
 
 #node = [n][0..nnum].
 
+#table = [table][1..tnum].
+#furniture = #table.
+
 #customer = [c][1..cnum].
 #waiter = [w][1..wnum].
 #agent = {agent}.
+
 #employee = #waiter + #agent.
+#person = #customer + #waiter. 
+%------------------------------------------------------------------------------%
+%% FLUENTS - Declaration of the fluents used in the restaurant domain %%
+#inertial_fluent = currentlocation(#employee, #node)   % Location of employees
 
-%% Locations of employees %%
-#inertial_fluent = currentlocation(#employee, #node).
-#fluent = #inertial_fluent.
+                 + iswaiting(#customer)                % Customer management             
+                 + iswith(#agent, #customer)           % Customer management
+                 + isattable(#customer, #table).       % Customer management
 
+#defined_fluent =  hasoccupancy(#table, #num).         % Table current occupancy
+
+#defined_fluent_special = isfree(#table).              % Table current state (free/occupied)
+
+#fluent = #inertial_fluent + #defined_fluent + #defined_fluent_special.
+%------------------------------------------------------------------------------%
 %% ACTIONS - Performed by the agent %%
-#a_go = go_to(#agent(A), #node(N)).   
-#action = #a_go.
 
+#a_go = go_to(#agent(A), #node(N)).                  % Go to a given node in the restaurant
+#a_pick = pick(#agent(A), #customer(Cu)).            % Pick up a (group of) customer(s)
+#a_seat = seat(#agent(A), #customer(Cu), #table(T)). % Seat a (group of) customer(s)
+#a_bill = give_bill(#agent(A), #table(T)).           % Give the bill to a table
+
+#action = #a_go + #a_pick + #a_seat.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 predicates
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 edge(#node, #node).
+areassociated(#node, #furniture).
+
+hascapacity(#table, #num).
+
+aretogethere(#customer, #customer).
 
 holds(#fluent, #step).
 occurs(#action, #step).
@@ -58,15 +83,12 @@ occurs(#action, #step).
 goal(#step).
 success().
 something_happened(#step).
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 rules
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% FLUENT RULES - Inertia axiom for fluents %%
 holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 -holds(F, I+1):- #inertial_fluent(F), -holds(F, I), not holds(F, I+1).
-%------------------------------------------------------------------------------%
-%% FLUENT RULES - Closed World Assumption (CWA) for inertial fluents %%
-% -holds(F, I):- not holds(F, I), #inertial_fluent(F).
 %------------------------------------------------------------------------------%
 %% ACTIONS RULES - Closed World Assumption (CWA) for actions %%
 -occurs(A,I):- not occurs(A,I).
@@ -74,9 +96,49 @@ holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 %% ACTIONS RULES - Non-simultaneity of actions %%
 :- occurs(A1,I), occurs(A2,I), A1!=A2.
 %------------------------------------------------------------------------------%
+%% OBSERVATIONS RULES - Reality-check %
+%:- obs(F,true,I), -holds(F,I).
+%:- obs(F,false,I), holds(F,I).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SIMPLE PLANNING MODULE %%
 
+success:- goal(I), I <= nstep.
+:- not success.
+occurs(A,I) | -occurs(A,I) :- not goal(I).
+something_happened(I):- occurs(A,I).
+:- not goal(I), not something_happened(I).
 
-%% DOMAIN RULES - Pathways in the restaurant %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% GOALS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%b_goal
+%goal(I):- holds(currentlocation(agent, n0), I).
+%goal(I):- holds(iswith(agent, c1), I).
+goal(I):- holds(isattable(c1, T), I).
+%e_goal
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%% OBSERVATIONS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%
+% Set the "fluent" initial situation here: %
+%b_obs
+holds(currentlocation(agent, n5), 0).
+holds(currentlocation(w1, n1), 0).
+
+%holds(iswaiting(c1), 0).
+holds(iswith(agent, c1), 0).
+holds(isattable(c2, table1), 0).
+%e_obs
+% Set the "static" initial situation here (allowed: declaring groups): %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOMAIN RULES - Restaurant layout %%
+
+% Capacity of tables in the restaurant %
+hascapacity(table1, 2).
+hascapacity(table2, 4).
+%------------------------------------------------------------------------------%
+% A table can only have one fixed capacity %
+-hascapacity(T, N):- not hascapacity(T, N).
+%------------------------------------------------------------------------------%
+% Pathways in the restaurant %
 edge(n1, n2).
 edge(n2, n3).
 edge(n3, n4).
@@ -91,7 +153,14 @@ edge(N2, N1):- edge(N1, N2).
 % If it is not known that there is an edge between nodes then there is not %
 -edge(N1, N2):- not edge(N1, N2).
 %------------------------------------------------------------------------------%
-
+% Node/furniture association %
+areassociated(n6, table1).
+areassociated(n6, table2).
+areassociated(n7, table2). 
+%------------------------------------------------------------------------------%
+% Two nodes that do not seem to be associated with a piece of furniture are not %
+-areassociated(N, F):- not areassociated(N, F).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DOMAIN RULES - Locations of employees in the restaurant %%
 
 % Two employees cannot share the same location %
@@ -99,32 +168,91 @@ edge(N2, N1):- edge(N1, N2).
 %------------------------------------------------------------------------------%
 % An employee can only have one current location at a time %
 -holds(currentlocation(E, N2), I):- holds(currentlocation(E, N1), I), N2 != N1.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOMAIN RULES - Waiting to be seated %%
 
+% A customer that is not initially known to be with the agent is not %
+-holds(iswith(agent, Cu), 0):- not holds(iswith(agent, Cu), 0).
+%------------------------------------------------------------------------------%
+% A customer cannot be with the agent and waiting at the same time %
+-holds(iswaiting(Cu), I):- holds(iswith(agent, Cu), I).
+%------------------------------------------------------------------------------%
+% A customer cannot be at at table and waiting at the same time %
+-holds(iswaiting(Cu), I):- holds(isattable(Cu, T), I).
+%------------------------------------------------------------------------------%
+% The agent cannot manage two groups at once %
+-holds(iswith(agent, Cu2), I):- holds(iswith(agent, Cu1), I), -aretogethere(Cu1, Cu2).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOMAIN RULES - Customer placement %
+
+% The "aretogethere" group relation is symmetric, transitive and reflexive %
+aretogethere(Cu2, Cu1):- aretogethere(Cu1, Cu2).
+aretogethere(Cu1, Cu3):- aretogethere(Cu1, Cu2), aretogethere(Cu2, Cu3).
+aretogethere(Cu, Cu).
+%------------------------------------------------------------------------------%
+% If two customers are not known to be togethere, then they are not %
+-aretogethere(Cu1, Cu2):- not aretogethere(Cu1, Cu2), Cu2 != Cu1.
+%------------------------------------------------------------------------------%
+% If a customer is not initially known to be at a table then he is not %
+-holds(isattable(Cu, T), 0):- not holds(isattable(Cu, T), 0).
+%------------------------------------------------------------------------------%
+% A customer cannot be at two tables at the same time %
+-holds(isattable(Cu, T2), I):- holds(isattable(Cu, T1), I), T2 != T1.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOMAIN RULES - Tables %%
+
+% A table's default state is free %
+holds(isfree(T), I):- not -holds(isfree(T), I).
+%------------------------------------------------------------------------------%
+% Current occupancy is determined by counting the # of clients at a table %
+holds(hasoccupancy(T, X), I):- X = #count{Cu : holds(isattable(Cu, T), I)}.
+%------------------------------------------------------------------------------%
+% A table cannot have multiple occupancies %
+-holds(hasoccupancy(T, X2), I):- holds(hasoccupancy(T, X1), I), X2 != X1.
+%------------------------------------------------------------------------------%
+% The occupancy of a table cannot exceed its maximum capacity %
+-holds(hasoccupancy(T, X2), I):- hascapacity(T, X1), X2 > X1.
+%------------------------------------------------------------------------------%
+% A table is not free if its occupancy is not 0 %
+-holds(isfree(T), I):- holds(hasoccupancy(T, X), I), X != 0. 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOMAIN RULES - Payment %%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ACTIONS - Causal laws %%
+
 % go_to(#agent, #node) %
 holds(currentlocation(agent, N), I+1):- occurs(go_to(agent, N), I).
 -holds(currentlocation(agent, M), I+1):- occurs(go_to(agent, N), I), M !=N.
+
+% pick(#agent, #customer) %
+-holds(iswaiting(Cu), I+1):- occurs(pick(agent, Cu), I).
+holds(iswith(agent, Cu), I+1):- occurs(pick(agent, Cu), I).
+
+% seat(#agent, #customer, #table) %
+holds(isattable(Cu, T), I+1):- occurs(seat(agent, Cu, T), I).
+-holds(iswith(agent, Cu), I+1):- occurs(seat(agent, Cu, T), I).
+
+% give_bill(#table) %
 %------------------------------------------------------------------------------%
 %% ACTIONS - Executability conditions %%
+
 % go_to(#agent, #node) %
 -occurs(go_to(agent, N), I):- holds(currentlocation(agent, M), I), -edge(M, N).
 -occurs(go_to(agent, N), I):- holds(currentlocation(E, N), I), #waiter(E).
 -occurs(go_to(agent, N), I):- holds(currentlocation(agent, N), I).
 
+% pick(#agent, #customer) %
+-occurs(pick(agent, Cu), I):- holds(currentlocation(agent, N), I), N != n5.
+-occurs(pick(agent, Cu), I):- -holds(iswaiting(Cu), I).
+-occurs(pick(agent, Cu), I):- #count{T: holds(isfree(T), I)} = 0.
 
-%% SIMPLE PLANNING MODULE %%
-success:- goal(I), I <= nstep.
-:- not success.
-occurs(A,I) | -occurs(A,I) :- not goal(I).
-something_happened(I):- occurs(A,I).
+% seat(#agent, #customer, #table) %
+-occurs(seat(agent, Cu, T), I):- -holds(iswith(agent, Cu), I).
+-occurs(seat(agent, Cu, T), I):- holds(currentlocation(agent, N), I), -areassociated(N, T).
+-occurs(seat(agent, Cu, T), I):- -holds(isfree(T), I).
 
-% Keep executing actions until goal is achieved...
-%:- goal(I), not goal(I-1), J<I, not something_happened(J).
-:- not goal(I), not something_happened(I).
-
-
-%% Goal and initial conditions
-goal(I):- holds(currentlocation(agent, n0), I).
-
-holds(currentlocation(agent, n6), 0).
-holds(currentlocation(w1, n1), 0).
+% give_bill(#table) %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
