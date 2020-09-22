@@ -50,13 +50,19 @@ sorts
 
                  + iswaiting(#customer)                % Customer management             
                  + iswith(#agent, #customer)           % Customer management
-                 + isattable(#customer, #table).       % Customer management
+                 + isattable(#customer, #table)        % Customer management
+                 + haspaid(#customer)                  % Customer management
+
+                 + wantsbill(#table).                  % Payment 
 
 #defined_fluent =  hasoccupancy(#table, #num).         % Table current occupancy
 
 #defined_fluent_special = isfree(#table).              % Table current state (free/occupied)
 
-#fluent = #inertial_fluent + #defined_fluent + #defined_fluent_special.
+#observable = has_entered(#customer)                   % Triggers iswaiting inertial fluent
+            + bill_wave(#table).                       % Triggers wantsbill inertial fluent
+
+#fluent = #inertial_fluent + #defined_fluent + #defined_fluent_special + #observable.
 %------------------------------------------------------------------------------%
 %% ACTIONS - Performed by the agent %%
 
@@ -65,7 +71,7 @@ sorts
 #a_seat = seat(#agent(A), #customer(Cu), #table(T)). % Seat a (group of) customer(s)
 #a_bill = give_bill(#agent(A), #table(T)).           % Give the bill to a table
 
-#action = #a_go + #a_pick + #a_seat.
+#action = #a_go + #a_pick + #a_seat + #a_bill.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 predicates
@@ -79,6 +85,8 @@ aretogethere(#customer, #customer).
 
 holds(#fluent, #step).
 occurs(#action, #step).
+
+obs(#observable, #boolean, #step).
 
 goal(#step).
 success().
@@ -97,8 +105,8 @@ holds(F, I+1):- #inertial_fluent(F), holds(F,I), not -holds(F, I+1).
 :- occurs(A1,I), occurs(A2,I), A1!=A2.
 %------------------------------------------------------------------------------%
 %% OBSERVATIONS RULES - Reality-check %
-%:- obs(F,true,I), -holds(F,I).
-%:- obs(F,false,I), holds(F,I).
+:- obs(F,true,I), -holds(F,I).
+:- obs(F,false,I), holds(F,I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% SIMPLE PLANNING MODULE %%
 
@@ -111,8 +119,9 @@ something_happened(I):- occurs(A,I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% GOALS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %b_goal
 %goal(I):- holds(currentlocation(agent, n0), I).
-%goal(I):- holds(iswith(agent, c1), I).
-goal(I):- holds(isattable(c1, T), I).
+goal(I):- holds(iswith(agent, c1), I).
+%goal(I):- holds(isattable(c1, T), I).
+goal(I):- holds(haspaid(c1), I).
 %e_goal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%% OBSERVATIONS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%
@@ -121,9 +130,14 @@ goal(I):- holds(isattable(c1, T), I).
 holds(currentlocation(agent, n5), 0).
 holds(currentlocation(w1, n1), 0).
 
+obs(has_entered(c1), true, 0).
 %holds(iswaiting(c1), 0).
-holds(iswith(agent, c1), 0).
+%holds(iswith(agent, c1), 0).
+%holds(iswith(agent, c2), 0).
+%aretogethere(c1, c2).
+%holds(isattable(c1, table1), 0).
 holds(isattable(c2, table1), 0).
+%holds(wantsbill(table1), 1).
 %e_obs
 % Set the "static" initial situation here (allowed: declaring groups): %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -218,6 +232,19 @@ holds(hasoccupancy(T, X), I):- X = #count{Cu : holds(isattable(Cu, T), I)}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DOMAIN RULES - Payment %%
 
+% A table does not initially wantsbill unless specified %
+-holds(wantsbill(T), 0):- not holds(wantsbill(T), 0).
+%------------------------------------------------------------------------------%
+% If a customer is not initially known to have paid then he has not unless specified %
+-holds(haspaid(Cu), 0):- not holds(haspaid(Cu), 0).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DOMAIN RULES - Observables %%
+
+% Observing a customer in the entrance triggers the iswaiting fluent %
+holds(iswaiting(Cu), I):- obs(has_entered(Cu), true, I).
+%------------------------------------------------------------------------------%
+% Observing a bill_wave triggers the wantsbill fluent %
+holds(wantsbill(T), I):- obs(bill_wave(T), true, I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -228,14 +255,16 @@ holds(currentlocation(agent, N), I+1):- occurs(go_to(agent, N), I).
 -holds(currentlocation(agent, M), I+1):- occurs(go_to(agent, N), I), M !=N.
 
 % pick(#agent, #customer) %
--holds(iswaiting(Cu), I+1):- occurs(pick(agent, Cu), I).
-holds(iswith(agent, Cu), I+1):- occurs(pick(agent, Cu), I).
+-holds(iswaiting(Cu2), I+1):- occurs(pick(agent, Cu1), I), aretogethere(Cu1, Cu2).
+holds(iswith(agent, Cu2), I+1):- occurs(pick(agent, Cu1), I), aretogethere(Cu1, Cu2).
 
 % seat(#agent, #customer, #table) %
-holds(isattable(Cu, T), I+1):- occurs(seat(agent, Cu, T), I).
--holds(iswith(agent, Cu), I+1):- occurs(seat(agent, Cu, T), I).
+holds(isattable(Cu2, T), I+1):- occurs(seat(agent, Cu1, T), I), aretogethere(Cu1, Cu2).
+-holds(iswith(agent, Cu2), I+1):- occurs(seat(agent, Cu1, T), I), aretogethere(Cu1, Cu2).
 
 % give_bill(#table) %
+holds(haspaid(Cu), I+1):- occurs(give_bill(agent, T), I), holds(isattable(Cu, T), I).
+-holds(wantsbill(T), I+1):- occurs(give_bill(agent, T), I).
 %------------------------------------------------------------------------------%
 %% ACTIONS - Executability conditions %%
 
@@ -253,6 +282,10 @@ holds(isattable(Cu, T), I+1):- occurs(seat(agent, Cu, T), I).
 -occurs(seat(agent, Cu, T), I):- -holds(iswith(agent, Cu), I).
 -occurs(seat(agent, Cu, T), I):- holds(currentlocation(agent, N), I), -areassociated(N, T).
 -occurs(seat(agent, Cu, T), I):- -holds(isfree(T), I).
+-occurs(seat(agent, Cu1, T), I):- #count{Cu2: aretogethere(Cu1, Cu2)} > X, hascapacity(T, X).
 
 % give_bill(#table) %
+-occurs(give_bill(agent, T), I):- -holds(wantsbill(T), I).
+-occurs(give_bill(agent, T), I):- holds(isfree(T), I).
+-occurs(give_bill(agent, T), I):- holds(currentlocation(agent, N), I), -areassociated(N, T).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

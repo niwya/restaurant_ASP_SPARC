@@ -13,8 +13,9 @@ impossible seat(agent, Cu, T) if {-isfree(T)}
 %------------------------------------------------------------------------------%
 %% give_bill(#employee(E), #table(T)) %%
 give_bill(agent, T) causes {haspaid(Cu)} if {isattable(Cu, T)}
+give_bill(agent, T) causes {-wantsbill(T)}
 impossible give_bill(agent, T) if {-wantsbill(T)}
-impossible give_bill(agent, T) if {-isfree(T)}
+impossible give_bill(agent, T) if {isfree(T)}
 impossible give_bill(agent, T) if {currentlocation(agent, N), -areassociated(N, T)}
 %------------------------------------------------------------------------------%
 %% go_to(#employee(E), #node(N)) %%
