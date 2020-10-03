@@ -10,7 +10,7 @@
 %% CONSTANTS - All of the necessary constants %%
 
 % Number of steps to plan on %
-#const nstep = 2.
+#const nstep =8.
 
 % Total number of waiters %
 #const wnum = 1.
@@ -119,25 +119,20 @@ something_happened(I):- occurs(A,I).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% GOALS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %b_goal
 %goal(I):- holds(currentlocation(agent, n0), I).
-goal(I):- holds(iswith(agent, c1), I).
-%goal(I):- holds(isattable(c1, T), I).
-goal(I):- holds(haspaid(c1), I).
+%goal(I):- holds(iswith(agent, c1), I).
+goal(I):- holds(isattable(c1, T), I).
+%goal(I):- holds(haspaid(c1), I).
 %e_goal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%% OBSERVATIONS TO BE SET BELOW: %%%%%%%%%%%%%%%%%%%%%%%%
 % Set the "fluent" initial situation here: %
 %b_obs
-holds(currentlocation(agent, n5), 0).
-holds(currentlocation(w1, n1), 0).
+holds(currentlocation(agent, n1), 0).
+holds(currentlocation(w1, n7), 0).
 
 obs(has_entered(c1), true, 0).
-%holds(iswaiting(c1), 0).
-%holds(iswith(agent, c1), 0).
-%holds(iswith(agent, c2), 0).
-%aretogethere(c1, c2).
-%holds(isattable(c1, table1), 0).
 holds(isattable(c2, table1), 0).
-%holds(wantsbill(table1), 1).
+
 %e_obs
 % Set the "static" initial situation here (allowed: declaring groups): %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
